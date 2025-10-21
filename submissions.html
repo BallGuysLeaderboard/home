@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ball Guys — Submissions</title>
+  <link rel="icon" href="/home/image1.png" />
+  <style>
+    :root{
+      --bg:#0f1220; --panel:#161a2b; --accent:#7bdcff; --muted:#9aa4bf; --text:#e9efff; --border:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg); color:var(--text); line-height:1.6;
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1000px;margin:0 auto;padding:20px 16px}
+    header{margin-bottom:12px}
+    h1{font-size:clamp(22px,3.5vw,34px);margin-bottom:6px}
+    .sub{color:var(--muted);font-size:14px}
+    .panel{
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:14px; padding:16px; margin:16px 0;
+    }
+    ul{margin:8px 0 0 1.2em}
+    li{margin:6px 0}
+    .btn-link{
+      display:inline-block; padding:10px 14px; border:1px solid var(--border);
+      background:var(--panel); border-radius:10px; font-weight:600;
+    }
+
+    /* Responsive Google Form embed */
+    .form-wrap{
+      position:relative; width:100%;
+      /* Give it a nice visible height on mobile/desktop; adjust as needed */
+      height: min(1400px, 85vh);
+      border:1px solid var(--border); border-radius:14px; overflow:hidden;
+      background:#0b0e1a;
+    }
+    .form-wrap iframe{
+      position:absolute; inset:0; width:100%; height:100%; border:0;
+    }
+
+    /* Prevent horizontal panning on phones */
+    img, table{max-width:100%; height:auto}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="btn-link" href="/home">← Go back to leaderboard</a>
+      <h1>Submit Your Run</h1>
+      <p class="sub">Fill out the form below. Make sure your proof links are accessible.</p>
+    </header>
+
+    <div class="panel">
+      <ul>
+        <li>All Submissions will be posted to the leaderboard as long as there is at least a screenshot for proof. In order to get a speedrun verified, follow the instructions <a href="/home/rules">linked here</a></li>
+        <li>User ID can be found by navigating to the Ball Guys Home screen&gt; settings&gt; Copy User ID</li>
+        <li>You may use any image or video hosting sites of your choosing (Youtube, Google Drive, imgur, dropbox, etc.)</li>
+        <li>You may also submit through discord and simply send the media to me through discord. Join the Ball Guys Discord server. Once there, Search "Abe" or "icarus1892" in the member search and you will find me.<br>
+          <strong>Ball Guys Discord</strong> <a href="https://discord.gg/Ballguys" target="_blank" rel="noopener">discord.gg/Ballguys</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <div class="form-wrap">
+        <!-- Replace YOUR_GOOGLE_FORM_URL with your live Google Form URL (…/viewform) -->
+        <iframe
+          src="https://docs.google.com/forms/d/e/YOUR_GOOGLE_FORM_URL/viewform?embedded=true"
+          allow="clipboard-write; fullscreen"
+          loading="lazy"
+          title="Ball Guys Submission Form">
+        </iframe>
+      </div>
+    </div>
+
+    <p><a class="btn-link" href="/home">← Back to leaderboard</a></p>
+  </div>
+</body>
+</html>
