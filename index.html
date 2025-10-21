@@ -19,7 +19,9 @@
   .btn:hover{border-color:#2a3150}
   .btn:disabled{opacity:0.5; cursor:not-allowed;}
   .select,.input{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; font-size:14px;}
-  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:hidden}
+  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; /* allow menus to overflow */ overflow:visible}
+  /* add a scroll wrapper so wide tables fit on phones */
+  .grid-scroll{width:100%; overflow:auto; border-radius:16px}
   table{width:100%; border-collapse:collapse}
   thead th{position:relative; text-align:left; padding:12px; font-size:14px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,rgba(22,26,43,.5),rgba(22,26,43,0))}
   tbody td{padding:12px; border-bottom:1px solid var(--border); vertical-align:top}
@@ -38,7 +40,14 @@
   .hdr-tools{display:inline-flex; gap:6px; margin-left:6px}
   .hdr-btn{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:1px solid var(--border); background:var(--panel); border-radius:6px; cursor:pointer; font-size:12px}
   .hdr-btn.sort.active{border-color:rgba(255,214,107,.35); background:rgba(255,214,107,.1)}
-  .menu{position:absolute; top:100%; left:0; margin-top:8px; width:min(360px,90vw); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.35); padding:10px; display:none; z-index:1000;}
+  .menu{
+    position:absolute; top:100%; left:0; margin-top:8px;
+    width:min(360px,90vw);
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35); padding:10px; display:none; z-index:1000;
+    /* ensure it never gets cut off by container */
+    max-height:70vh; overflow:auto;
+  }
   .menu.open{display:block}
   .menu .row{display:flex; gap:8px; margin-bottom:8px}
   .menu .scroll{max-height:220px; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:6px}
@@ -48,13 +57,23 @@
   .pill{font-size:12px; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:rgba(255,255,255,.04); display:inline-block;}
   .loading{text-align:center; padding:40px; color:var(--muted)}
   .error{background:rgba(255,123,123,.1); border:1px solid rgba(255,123,123,.3); color:#ffc7c7; padding:12px; border-radius:8px; margin:16px 0;}
+
+  /* ---------- Mobile tweaks ---------- */
+  @media (max-width: 720px){
+    .container{padding:12px}
+    .toolbar{gap:8px}
+    thead th, tbody td{padding:10px}
+    .grid-scroll{overflow-x:auto}
+    /* make the table wider than the viewport so it scrolls smoothly */
+    table{min-width: 760px;}
+  }
 </style>
 </head>
 <body>
 <header>
   <div class="container">
     <h1>Ball Guys Speedrun Leaderboard👑</h1>
-    <div class="sub">Contact Abe to submit your run to the leaderboard</div>
+    <div class="sub">Contact <a class="link" href="https://discord.com" target="_blank" rel="noopener">Abe</a> to submit your run to the leaderboard</div>
     <div class="toolbar">
       <label class="muted">Rows per page</label>
       <select id="pageSize" class="select">
@@ -74,53 +93,56 @@
 
 <div class="container">
   <div id="errorContainer" style="display:none"></div>
+
   <div class="grid">
-    <table id="grid">
-      <thead>
-        <tr>
-          <th data-col="nickname">Nickname
-            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
-            <div class="menu"></div>
-          </th>
-          <th data-col="timeMs">Time
-            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
-            <div class="menu"></div>
-          </th>
-          <th data-col="map">Map Name
-            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
-            <div class="menu"></div>
-          </th>
-          <th data-col="status">Status
-            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
-            <div class="menu"></div>
-          </th>
-          <th data-col="video">Link to Submission Video
-            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
-            <div class="menu"></div>
-          </th>
-          <th data-col="image">Link to Submission Image
-            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
-            <div class="menu"></div>
-          </th>
-          <th data-col="userId">User ID
-            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
-            <div class="menu"></div>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td colspan="7" class="loading">Loading data...</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="grid-scroll"> <!-- new scroll wrapper -->
+      <table id="grid">
+        <thead>
+          <tr>
+            <th data-col="nickname">Nickname
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="timeMs">Time
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="map">Map Name
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="status">Status
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="video">Link to Submission Video
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="image">Link to Submission Image
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="userId">User ID
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" class="loading">Loading data...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
-  <div class="muted">Tip: Click a column header's ⏷ for Excel-style search + multi-select. Use ⇅ to sort. Data is read-only and mirrors your sheet.</div>
+
+  <div class="muted" style="margin-top:8px">Tip: Click a column header's ⏷ for Excel-style search + multi-select. Use ⇅ to sort. Data is read-only and mirrors your sheet.</div>
 </div>
 
 <script>
 /*** CONFIG ***/
-
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbw2iCJRvlh0SOUdXrlsNaBEqo7zQkHffkyF8Ra42CCCY3kSsamMBkjArqOyZHEklJIgzw/exec';
 
 /*** STATE ***/
@@ -268,7 +290,6 @@ function applyFilters(rows) {
       if (f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) {
         return false;
       }
-      
       // Multi-select filter
       if (f.selected.size > 0 && !f.selected.has(cell)) {
         return false;
@@ -329,12 +350,12 @@ function render() {
   
   const filtered = applyFilters(state.data);
   const sorted = sortRows(filtered);
-  const { pageRows, totalPages, totalRows } = paginate(sorted);
+  const { pageRows, totalPages } = paginate(sorted);
   
-    // Update sort button states
+  // Update sort button states
   updateSortButtons();
-  
-  // --- Helper to ensure URLs are absolute ---
+
+  // --- Ensure URLs are absolute ---
   function normalizeUrl(url) {
     if (!url) return '';
     url = String(url).trim();
@@ -342,7 +363,7 @@ function render() {
     if (url.startsWith('//')) return 'https:' + url;  // protocol-relative
     return 'https://' + url.replace(/^\/+/, '');      // assume https
   }
-  // ------------------------------------------
+  // ---------------------------------
 
   if (pageRows.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" class="loading">No results match your filters</td></tr>';
@@ -384,7 +405,8 @@ function render() {
     return div;
   })();
   
-  info.textContent = `Showing ${pageRows.length} of ${filtered.length} rows (${state.data.length} total)`;
+  const filteredRows = applyFilters(state.data);
+  info.textContent = `Showing ${pageRows.length} of ${filteredRows.length} rows (${state.data.length} total)`;
 }
 
 function updateSortButtons() {
@@ -415,6 +437,12 @@ function setupHeaders(rebuild = false) {
       menu.dataset.wired = '1';
     }
     
+    // IMPORTANT: keep menu open when interacting inside it
+    // (otherwise document click handler will close it)
+    menu.addEventListener('click', e => e.stopPropagation());
+    menu.addEventListener('mousedown', e => e.stopPropagation());
+    menu.addEventListener('touchstart', e => e.stopPropagation(), {passive:true});
+
     // Remove existing listeners
     fBtn.onclick = null;
     sBtn.onclick = null;
@@ -491,11 +519,8 @@ function buildMenu(menu, colKey) {
       
       cb.addEventListener('change', () => {
         const set = state.filters[colKey].selected;
-        if (cb.checked) {
-          set.add(String(v));
-        } else {
-          set.delete(String(v));
-        }
+        if (cb.checked) set.add(String(v));
+        else set.delete(String(v));
       });
     });
   }
@@ -506,7 +531,7 @@ function buildMenu(menu, colKey) {
   
   const apply = document.createElement('button');
   apply.className = 'btn';
-  apply.textContent = 'Apply Filter';
+  apply.textContent = 'Apply';
   
   const reset = document.createElement('button');
   reset.className = 'btn';
@@ -516,7 +541,8 @@ function buildMenu(menu, colKey) {
   menu.append(row1, scroll, actions);
   
   // Event listeners
-  input.addEventListener('input', () => {
+  input.addEventListener('input', (e) => {
+    // do NOT rebuild menu here — just save text
     state.filters[colKey].text = input.value;
   });
   
@@ -533,7 +559,7 @@ function buildMenu(menu, colKey) {
   
   reset.addEventListener('click', () => {
     state.filters[colKey] = { text: '', selected: new Set() };
-    buildMenu(menu, colKey);
+    buildMenu(menu, colKey);   // rebuild this menu with cleared state
     state.page = 1;
     render();
   });
@@ -577,6 +603,12 @@ $('#pageNum').addEventListener('keypress', (e) => {
 
 /*** BOOT ***/
 document.addEventListener('DOMContentLoaded', () => {
+  // Mobile-friendly default page size
+  if (window.innerWidth < 720) {
+    state.pageSize = 5;
+    const sel = document.getElementById('pageSize');
+    if (sel) sel.value = '5';
+  }
   refresh();
 });
 
