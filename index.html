@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ball Guys Speedrun Leaderboard👑</title>
+<link rel="icon" href="/home/image1.png" />
 <style>
   :root{
     --bg:#0f1220; --panel:#161a2b; --accent:#7bdcff; --muted:#9aa4bf; --text:#e9efff; --border:rgba(255,255,255,.08);
@@ -12,15 +13,15 @@
   body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.4;}
   header{position:sticky; top:0; z-index:2; background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70)); backdrop-filter:blur(6px); border-bottom:1px solid var(--border)}
   .container{max-width:1200px; margin:0 auto; padding:16px}
-  h1{margin:0; font-size:clamp(20px,2.5vw,28px)}
-  .sub{color:var(--muted); font-size:14px; margin-top:4px}
+  h1{margin:0; font-size:clamp(22px,3vw,32px)}
+  .sub-lg{font-size:clamp(16px,2.2vw,20px); margin-top:6px}
+  .sub-sm{color:var(--muted); font-size:13px; margin-top:6px}
   .toolbar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px}
   .btn{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; cursor:pointer; font-size:14px;}
   .btn:hover{border-color:#2a3150}
   .btn:disabled{opacity:0.5; cursor:not-allowed;}
   .select,.input{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; font-size:14px;}
-  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; /* allow menus to overflow */ overflow:visible}
-  /* add a scroll wrapper so wide tables fit on phones */
+  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:visible}
   .grid-scroll{width:100%; overflow:auto; border-radius:16px}
   table{width:100%; border-collapse:collapse}
   thead th{position:relative; text-align:left; padding:12px; font-size:14px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,rgba(22,26,43,.5),rgba(22,26,43,0))}
@@ -36,7 +37,6 @@
   .status.approved{background:rgba(123,255,183,.08); border-color:rgba(123,255,183,.25); color:#b7ffd2}
   .status.pending{background:rgba(255,214,107,.08); border-color:rgba(255,214,107,.25); color:#ffe2a6}
   .status.rejected{background:rgba(255,123,123,.08); border-color:rgba(255,123,123,.25); color:#ffc7c7}
-  /* header filter/sort buttons */
   .hdr-tools{display:inline-flex; gap:6px; margin-left:6px}
   .hdr-btn{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:1px solid var(--border); background:var(--panel); border-radius:6px; cursor:pointer; font-size:12px}
   .hdr-btn.sort.active{border-color:rgba(255,214,107,.35); background:rgba(255,214,107,.1)}
@@ -45,7 +45,6 @@
     width:min(360px,90vw);
     background:var(--panel); border:1px solid var(--border); border-radius:12px;
     box-shadow:0 10px 30px rgba(0,0,0,.35); padding:10px; display:none; z-index:1000;
-    /* ensure it never gets cut off by container */
     max-height:70vh; overflow:auto;
   }
   .menu.open{display:block}
@@ -58,13 +57,12 @@
   .loading{text-align:center; padding:40px; color:var(--muted)}
   .error{background:rgba(255,123,123,.1); border:1px solid rgba(255,123,123,.3); color:#ffc7c7; padding:12px; border-radius:8px; margin:16px 0;}
 
-  /* ---------- Mobile tweaks ---------- */
+  /* Mobile tweaks */
   @media (max-width: 720px){
     .container{padding:12px}
     .toolbar{gap:8px}
     thead th, tbody td{padding:10px}
     .grid-scroll{overflow-x:auto}
-    /* make the table wider than the viewport so it scrolls smoothly */
     table{min-width: 760px;}
   }
 </style>
@@ -73,7 +71,13 @@
 <header>
   <div class="container">
     <h1>Ball Guys Speedrun Leaderboard👑</h1>
-    <div class="sub">Contact <a class="link" href="https://discord.com" target="_blank" rel="noopener">Abe</a> to submit your run to the leaderboard</div>
+    <div class="sub-lg">
+      Submit your runs through <a class="link" href="home/submissions">this form</a>
+    </div>
+    <div class="sub-sm">
+      Please read the <a class="link" href="/home/rules">instructions &amp; rules</a> before running a level in order to have a verified speedrun! All runs are manually reviewed.
+    </div>
+
     <div class="toolbar">
       <label class="muted">Rows per page</label>
       <select id="pageSize" class="select">
@@ -95,7 +99,7 @@
   <div id="errorContainer" style="display:none"></div>
 
   <div class="grid">
-    <div class="grid-scroll"> <!-- new scroll wrapper -->
+    <div class="grid-scroll">
       <table id="grid">
         <thead>
           <tr>
@@ -138,7 +142,7 @@
     </div>
   </div>
 
-  <div class="muted" style="margin-top:8px">Tip: Click a column header's ⏷ for Excel-style search + multi-select. Use ⇅ to sort. Data is read-only and mirrors your sheet.</div>
+  <div class="muted" style="margin-top:8px">Tip: Click a column header's ⏷ for Excel-style search + multi-select. Use ⇅ to sort.</div>
 </div>
 
 <script>
@@ -150,7 +154,7 @@ const state = {
   data: [],
   filters: {},
   sort: { col: 'timeMs', dir: 'asc' },
-  pageSize: 10,
+  pageSize: 10,   // default 10 rows per page
   page: 1,
   loading: false
 };
@@ -285,15 +289,8 @@ function applyFilters(rows) {
   return rows.filter(r => {
     for (const [col, f] of Object.entries(state.filters)) {
       const cell = String(r[col] ?? '');
-      
-      // Text search filter
-      if (f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) {
-        return false;
-      }
-      // Multi-select filter
-      if (f.selected.size > 0 && !f.selected.has(cell)) {
-        return false;
-      }
+      if (f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) return false;
+      if (f.selected.size > 0 && !f.selected.has(cell)) return false;
     }
     return true;
   });
@@ -304,26 +301,11 @@ function sortRows(rows) {
   const m = dir === 'asc' ? 1 : -1;
   
   return rows.slice().sort((a, b) => {
-    const av = a[col];
-    const bv = b[col];
-    
-    // Special handling for time
-    if (col === 'timeMs') {
-      return (Number(av) - Number(bv)) * m;
-    }
-    
-    // Try numeric comparison first
-    const an = Number(av);
-    const bn = Number(bv);
-    if (!isNaN(an) && !isNaN(bn)) {
-      return (an - bn) * m;
-    }
-    
-    // String comparison
-    return String(av).localeCompare(String(bv), undefined, { 
-      numeric: true, 
-      sensitivity: 'base' 
-    }) * m;
+    const av = a[col], bv = b[col];
+    if (col === 'timeMs') return (Number(av) - Number(bv)) * m;
+    const an = Number(av), bn = Number(bv);
+    if (!isNaN(an) && !isNaN(bn)) return (an - bn) * m;
+    return String(av).localeCompare(String(bv), undefined, { numeric:true, sensitivity:'base' }) * m;
   });
 }
 
@@ -344,7 +326,10 @@ function render() {
   const tbody = $('#grid tbody');
   
   if (state.data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="loading">No data available</td></tr>';
+    // Still show 10 blank rows on first paint if no data
+    tbody.innerHTML = Array.from({length: state.pageSize}).map(() => `
+      <tr>${'<td class="muted">&nbsp;</td>'.repeat(7)}</tr>
+    `).join('');
     return;
   }
   
@@ -355,39 +340,37 @@ function render() {
   // Update sort button states
   updateSortButtons();
 
-  // --- Ensure URLs are absolute ---
+  // Ensure URLs are absolute
   function normalizeUrl(url) {
     if (!url) return '';
     url = String(url).trim();
-    if (/^https?:\/\//i.test(url)) return url;        // already absolute
-    if (url.startsWith('//')) return 'https:' + url;  // protocol-relative
-    return 'https://' + url.replace(/^\/+/, '');      // assume https
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return 'https:' + url;
+    return 'https://' + url.replace(/^\/+/, '');
   }
-  // ---------------------------------
 
-  if (pageRows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="loading">No results match your filters</td></tr>';
-  } else {
-    tbody.innerHTML = pageRows.map(r => `
-      <tr>
-        <td>${escapeAttr(r.nickname)}</td>
-        <td><span class="pill">${formatTime(Number(r.timeMs) || 0)}</span></td>
-        <td>${escapeAttr(r.map)}</td>
-        <td><span class="status ${statusClass(r.status)}">${escapeAttr(r.status || 'Pending')}</span></td>
-        <td>${
-          r.video
-            ? `<a class="link" href="${normalizeUrl(r.video)}" target="_blank" rel="noopener">Link to Video</a>`
-            : ''
-        }</td>
-        <td>${
-          r.image
-            ? `<a class="link" href="${normalizeUrl(r.image)}" target="_blank" rel="noopener">Link to Image</a>`
-            : ''
-        }</td>
-        <td>${escapeAttr(r.userId)}</td>
-      </tr>
-    `).join('');
+  // Build rows HTML
+  let rowsHtml = pageRows.map(r => `
+    <tr>
+      <td>${escapeAttr(r.nickname)}</td>
+      <td><span class="pill">${formatTime(Number(r.timeMs) || 0)}</span></td>
+      <td>${escapeAttr(r.map)}</td>
+      <td><span class="status ${statusClass(r.status)}">${escapeAttr(r.status || 'Pending')}</span></td>
+      <td>${r.video ? `<a class="link" href="${normalizeUrl(r.video)}" target="_blank" rel="noopener">Link to Video</a>` : ''}</td>
+      <td>${r.image ? `<a class="link" href="${normalizeUrl(r.image)}" target="_blank" rel="noopener">Link to Image</a>` : ''}</td>
+      <td>${escapeAttr(r.userId)}</td>
+    </tr>
+  `).join('');
+
+  // Pad to at least pageSize (e.g., 10) with blank rows
+  const needed = Math.max(0, state.pageSize - pageRows.length);
+  if (needed > 0) {
+    rowsHtml += Array.from({length: needed}).map(() =>
+      `<tr>${'<td class="muted">&nbsp;</td>'.repeat(7)}</tr>`
+    ).join('');
   }
+
+  tbody.innerHTML = rowsHtml;
   
   // Update pagination
   $('#pageTotal').textContent = `/ ${totalPages}`;
@@ -401,7 +384,7 @@ function render() {
     div.className = 'muted';
     div.style.marginTop = '12px';
     div.id = 'rowInfo';
-    $('.container').appendChild(div);
+    document.querySelector('.container').appendChild(div);
     return div;
   })();
   
@@ -414,7 +397,6 @@ function updateSortButtons() {
     btn.classList.remove('active');
     const th = btn.closest('th');
     const colKey = th.getAttribute('data-col');
-    
     if (state.sort.col === colKey) {
       btn.classList.add('active');
       btn.textContent = state.sort.dir === 'asc' ? '↑' : '↓';
@@ -437,17 +419,14 @@ function setupHeaders(rebuild = false) {
       menu.dataset.wired = '1';
     }
     
-    // IMPORTANT: keep menu open when interacting inside it
-    // (otherwise document click handler will close it)
+    // Keep menu open when interacting inside it
     menu.addEventListener('click', e => e.stopPropagation());
     menu.addEventListener('mousedown', e => e.stopPropagation());
     menu.addEventListener('touchstart', e => e.stopPropagation(), {passive:true});
 
-    // Remove existing listeners
-    fBtn.onclick = null;
-    sBtn.onclick = null;
+    // Reset listeners
+    fBtn.onclick = null; sBtn.onclick = null;
     
-    // Add new listeners
     fBtn.onclick = (e) => {
       $$('.menu.open').forEach(m => m.classList.remove('open'));
       menu.classList.toggle('open');
@@ -466,7 +445,7 @@ function setupHeaders(rebuild = false) {
     };
   });
   
-  // Close menus when clicking elsewhere
+  // Close menus on outside click
   document.addEventListener('click', () => {
     $$('.menu.open').forEach(m => m.classList.remove('open'));
   });
@@ -508,19 +487,15 @@ function buildMenu(menu, colKey) {
       cb.checked = state.filters[colKey].selected.has(String(v));
       
       const text = document.createElement('span');
-      if (colKey === 'timeMs') {
-        text.textContent = formatTime(Number(v) || 0);
-      } else {
-        text.textContent = v || '(empty)';
-      }
+      if (colKey === 'timeMs') text.textContent = formatTime(Number(v) || 0);
+      else text.textContent = v || '(empty)';
       
       label.append(cb, text);
       scroll.appendChild(label);
       
       cb.addEventListener('change', () => {
         const set = state.filters[colKey].selected;
-        if (cb.checked) set.add(String(v));
-        else set.delete(String(v));
+        if (cb.checked) set.add(String(v)); else set.delete(String(v));
       });
     });
   }
@@ -540,9 +515,8 @@ function buildMenu(menu, colKey) {
   actions.append(apply, reset);
   menu.append(row1, scroll, actions);
   
-  // Event listeners
-  input.addEventListener('input', (e) => {
-    // do NOT rebuild menu here — just save text
+  // Events
+  input.addEventListener('input', () => {
     state.filters[colKey].text = input.value;
   });
   
@@ -559,7 +533,7 @@ function buildMenu(menu, colKey) {
   
   reset.addEventListener('click', () => {
     state.filters[colKey] = { text: '', selected: new Set() };
-    buildMenu(menu, colKey);   // rebuild this menu with cleared state
+    buildMenu(menu, colKey);
     state.page = 1;
     render();
   });
@@ -593,7 +567,7 @@ $('#refreshBtn').addEventListener('click', () => {
   }
 });
 
-// Handle page input enter key
+// Enter to go to page
 $('#pageNum').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
     state.page = Math.max(1, Number($('#pageNum').value) || 1);
@@ -603,12 +577,9 @@ $('#pageNum').addEventListener('keypress', (e) => {
 
 /*** BOOT ***/
 document.addEventListener('DOMContentLoaded', () => {
-  // Mobile-friendly default page size
-  if (window.innerWidth < 720) {
-    state.pageSize = 5;
-    const sel = document.getElementById('pageSize');
-    if (sel) sel.value = '5';
-  }
+  // Keep default at 10 (no mobile override)
+  const sel = document.getElementById('pageSize');
+  if (sel) sel.value = String(state.pageSize);
   refresh();
 });
 
