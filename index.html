@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ball Guys Speedrun Leaderboard👑</title>
+<style>
+  :root{
+    --bg:#0f1220; --panel:#161a2b; --accent:#7bdcff; --muted:#9aa4bf; --text:#e9efff; --border:rgba(255,255,255,.08);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.4;}
+  header{position:sticky; top:0; z-index:2; background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70)); backdrop-filter:blur(6px); border-bottom:1px solid var(--border)}
+  .container{max-width:1200px; margin:0 auto; padding:16px}
+  h1{margin:0; font-size:clamp(20px,2.5vw,28px)}
+  .sub{color:var(--muted); font-size:14px; margin-top:4px}
+  .toolbar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px}
+  .btn{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; cursor:pointer; font-size:14px;}
+  .btn:hover{border-color:#2a3150}
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .select,.input{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; font-size:14px;}
+  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:hidden}
+  table{width:100%; border-collapse:collapse}
+  thead th{position:relative; text-align:left; padding:12px; font-size:14px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,rgba(22,26,43,.5),rgba(22,26,43,0))}
+  tbody td{padding:12px; border-bottom:1px solid var(--border); vertical-align:top}
+  tbody tr:hover{background:rgba(255,255,255,.02)}
+  .muted{color:var(--muted)}
+  .right{margin-left:auto}
+  .pagination{display:flex; align-items:center; gap:8px}
+  .page-input{width:56px; text-align:center}
+  a.link{color:var(--accent); text-decoration:none}
+  a.link:hover{text-decoration:underline}
+  .status{padding:4px 8px; border-radius:8px; font-size:12px; border:1px solid var(--border); display:inline-block;}
+  .status.approved{background:rgba(123,255,183,.08); border-color:rgba(123,255,183,.25); color:#b7ffd2}
+  .status.pending{background:rgba(255,214,107,.08); border-color:rgba(255,214,107,.25); color:#ffe2a6}
+  .status.rejected{background:rgba(255,123,123,.08); border-color:rgba(255,123,123,.25); color:#ffc7c7}
+  /* header filter/sort buttons */
+  .hdr-tools{display:inline-flex; gap:6px; margin-left:6px}
+  .hdr-btn{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:1px solid var(--border); background:var(--panel); border-radius:6px; cursor:pointer; font-size:12px}
+  .hdr-btn.sort.active{border-color:rgba(255,214,107,.35); background:rgba(255,214,107,.1)}
+  .menu{position:absolute; top:100%; left:0; margin-top:8px; width:min(360px,90vw); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.35); padding:10px; display:none; z-index:1000;}
+  .menu.open{display:block}
+  .menu .row{display:flex; gap:8px; margin-bottom:8px}
+  .menu .scroll{max-height:220px; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:6px}
+  .menu .item{display:flex; align-items:center; gap:8px; padding:6px 4px; cursor:pointer;}
+  .menu .item:hover{background:rgba(255,255,255,.05)}
+  .menu .actions{display:flex; gap:8px; margin-top:8px}
+  .pill{font-size:12px; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:rgba(255,255,255,.04); display:inline-block;}
+  .loading{text-align:center; padding:40px; color:var(--muted)}
+  .error{background:rgba(255,123,123,.1); border:1px solid rgba(255,123,123,.3); color:#ffc7c7; padding:12px; border-radius:8px; margin:16px 0;}
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <h1>Ball Guys Speedrun Leaderboard👑</h1>
+    <div class="sub">Live mirror of your Google Sheet • Filter • Sort • Search • Pagination</div>
+    <div class="toolbar">
+      <label class="muted">Rows per page</label>
+      <select id="pageSize" class="select">
+        <option>5</option><option selected>10</option><option>25</option><option>50</option><option>100</option>
+      </select>
+      <div class="pagination right">
+        <button class="btn" id="prev">←</button>
+        <span class="muted">Page</span>
+        <input id="pageNum" class="input page-input" type="number" min="1" value="1" />
+        <span class="muted" id="pageTotal">/ 1</span>
+        <button class="btn" id="next">→</button>
+      </div>
+      <button class="btn" id="refreshBtn" title="Reload from sheet">↻ Refresh</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div id="errorContainer" style="display:none"></div>
+  <div class="grid">
+    <table id="grid">
+      <thead>
+        <tr>
+          <th data-col="nickname">Nickname
+            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+            <div class="menu"></div>
+          </th>
+          <th data-col="timeMs">Time
+            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+            <div class="menu"></div>
+          </th>
+          <th data-col="map">Map Name
+            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+            <div class="menu"></div>
+          </th>
+          <th data-col="status">Status
+            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+            <div class="menu"></div>
+          </th>
+          <th data-col="video">Link to Submission Video
+            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+            <div class="menu"></div>
+          </th>
+          <th data-col="image">Link to Submission Image
+            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+            <div class="menu"></div>
+          </th>
+          <th data-col="userId">User ID
+            <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+            <div class="menu"></div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="7" class="loading">Loading data...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="muted">Tip: Click a column header's ⏷ for Excel-style search + multi-select. Use ⇅ to sort. Data is read-only and mirrors your sheet.</div>
+</div>
+
+<script>
+/*** CONFIG ***/
+
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbw2iCJRvlh0SOUdXrlsNaBEqo7zQkHffkyF8Ra42CCCY3kSsamMBkjArqOyZHEklJIgzw/exec';
+
+/*** STATE ***/
+const state = {
+  data: [],
+  filters: {},
+  sort: { col: 'timeMs', dir: 'asc' },
+  pageSize: 10,
+  page: 1,
+  loading: false
+};
+
+const COLS = [
+  { key: 'nickname', label: 'Nickname' },
+  { key: 'timeMs',  label: 'Time' },
+  { key: 'map',     label: 'Map Name' },
+  { key: 'status',  label: 'Status' },
+  { key: 'video',   label: 'Link to Submission Video' },
+  { key: 'image',   label: 'Link to Submission Image' },
+  { key: 'userId',  label: 'User ID' },
+];
+
+// Initialize filters
+COLS.forEach(c => {
+  state.filters[c.key] = { text: '', selected: new Set() };
+});
+
+/*** HELPERS ***/
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function clamp(n, min, max) { 
+  return Math.max(min, Math.min(max, n)); 
+}
+
+function uniqueVals(rows, col) { 
+  return [...new Set(rows.map(r => String(r[col] ?? '')))].sort(); 
+}
+
+function escapeAttr(s) { 
+  return String(s ?? '').replace(/"/g, '&quot;').replace(/'/g, '&#x27;'); 
+}
+
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const hundredths = Math.floor((ms % 1000) / 10);
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${hundredths.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}.${hundredths.toString().padStart(2, '0')}`;
+}
+
+function statusClass(s) { 
+  const t = (s || '').toLowerCase(); 
+  if (t.includes('approve')) return 'approved'; 
+  if (t.includes('reject')) return 'rejected'; 
+  return 'pending'; 
+}
+
+function showError(message) {
+  const container = $('#errorContainer');
+  container.innerHTML = `<div class="error">${message}</div>`;
+  container.style.display = 'block';
+}
+
+function hideError() {
+  $('#errorContainer').style.display = 'none';
+}
+
+/*** DATA IO ***/
+async function loadData() {
+  if (state.loading) return;
+  state.loading = true;
+  
+  try {
+    hideError();
+    const tbody = $('#grid tbody');
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading data...</td></tr>';
+    
+    // Add cache busting and timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const r = await fetch(`${ENDPOINT}?action=data&_=${Date.now()}`, { 
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!r.ok) {
+      throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+    }
+    
+    const j = await r.json();
+    
+    if (j.error) {
+      throw new Error(j.error);
+    }
+    
+    if (!Array.isArray(j.rows)) {
+      throw new Error('Invalid data format received from server');
+    }
+    
+    state.data = j.rows;
+    return true;
+    
+  } catch (e) {
+    console.error('Load data error:', e);
+    let errorMessage = 'Could not load data: ';
+    
+    if (e.name === 'AbortError') {
+      errorMessage += 'Request timed out. Check your internet connection.';
+    } else if (e.message.includes('Failed to fetch')) {
+      errorMessage += 'Network error. Check if the endpoint URL is correct and accessible.';
+    } else {
+      errorMessage += e.message;
+    }
+    
+    showError(errorMessage);
+    return false;
+  } finally {
+    state.loading = false;
+  }
+}
+
+async function refresh() {
+  const success = await loadData();
+  if (success) {
+    setupHeaders(true);
+    render();
+  }
+}
+
+/*** FILTER + SORT + PAGE ***/
+function applyFilters(rows) {
+  return rows.filter(r => {
+    for (const [col, f] of Object.entries(state.filters)) {
+      const cell = String(r[col] ?? '');
+      
+      // Text search filter
+      if (f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) {
+        return false;
+      }
+      
+      // Multi-select filter
+      if (f.selected.size > 0 && !f.selected.has(cell)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+function sortRows(rows) {
+  const { col, dir } = state.sort;
+  const m = dir === 'asc' ? 1 : -1;
+  
+  return rows.slice().sort((a, b) => {
+    const av = a[col];
+    const bv = b[col];
+    
+    // Special handling for time
+    if (col === 'timeMs') {
+      return (Number(av) - Number(bv)) * m;
+    }
+    
+    // Try numeric comparison first
+    const an = Number(av);
+    const bn = Number(bv);
+    if (!isNaN(an) && !isNaN(bn)) {
+      return (an - bn) * m;
+    }
+    
+    // String comparison
+    return String(av).localeCompare(String(bv), undefined, { 
+      numeric: true, 
+      sensitivity: 'base' 
+    }) * m;
+  });
+}
+
+function paginate(rows) {
+  const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
+  state.page = clamp(state.page, 1, totalPages);
+  const start = (state.page - 1) * state.pageSize;
+  const end = start + state.pageSize;
+  return { 
+    pageRows: rows.slice(start, end), 
+    totalPages,
+    totalRows: rows.length 
+  };
+}
+
+/*** RENDER ***/
+function render() {
+  const tbody = $('#grid tbody');
+  
+  if (state.data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">No data available</td></tr>';
+    return;
+  }
+  
+  const filtered = applyFilters(state.data);
+  const sorted = sortRows(filtered);
+  const { pageRows, totalPages, totalRows } = paginate(sorted);
+  
+  // Update sort button states
+  updateSortButtons();
+  
+  if (pageRows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">No results match your filters</td></tr>';
+  } else {
+    tbody.innerHTML = pageRows.map(r => `
+      <tr>
+        <td>${escapeAttr(r.nickname)}</td>
+        <td><span class="pill">${formatTime(Number(r.timeMs) || 0)}</span></td>
+        <td>${escapeAttr(r.map)}</td>
+        <td><span class="status ${statusClass(r.status)}">${escapeAttr(r.status || 'Pending')}</span></td>
+        <td>${r.video ? `<a class="link" href="${escapeAttr(r.video)}" target="_blank" rel="noopener">Link to Video</a>` : ''}</td>
+        <td>${r.image ? `<a class="link" href="${escapeAttr(r.image)}" target="_blank" rel="noopener">Link to Image</a>` : ''}</td>
+        <td>${escapeAttr(r.userId)}</td>
+      </tr>
+    `).join('');
+  }
+  
+  // Update pagination
+  $('#pageTotal').textContent = `/ ${totalPages}`;
+  $('#pageNum').value = state.page;
+  $('#prev').disabled = state.page <= 1;
+  $('#next').disabled = state.page >= totalPages;
+  
+  // Update row count info
+  const info = $('#rowInfo') || (() => {
+    const div = document.createElement('div');
+    div.className = 'muted';
+    div.style.marginTop = '12px';
+    div.id = 'rowInfo';
+    $('.container').appendChild(div);
+    return div;
+  })();
+  
+  info.textContent = `Showing ${pageRows.length} of ${filtered.length} rows (${state.data.length} total)`;
+}
+
+function updateSortButtons() {
+  $$('.hdr-btn.sort').forEach(btn => {
+    btn.classList.remove('active');
+    const th = btn.closest('th');
+    const colKey = th.getAttribute('data-col');
+    
+    if (state.sort.col === colKey) {
+      btn.classList.add('active');
+      btn.textContent = state.sort.dir === 'asc' ? '↑' : '↓';
+    } else {
+      btn.textContent = '⇅';
+    }
+  });
+}
+
+/*** HEADER MENUS ***/
+function setupHeaders(rebuild = false) {
+  $$('thead th').forEach(th => {
+    const colKey = th.getAttribute('data-col');
+    const menu = th.querySelector('.menu');
+    const fBtn = th.querySelector('.hdr-btn.filter');
+    const sBtn = th.querySelector('.hdr-btn.sort');
+    
+    if (rebuild || !menu.dataset.wired) {
+      buildMenu(menu, colKey);
+      menu.dataset.wired = '1';
+    }
+    
+    // Remove existing listeners
+    fBtn.onclick = null;
+    sBtn.onclick = null;
+    
+    // Add new listeners
+    fBtn.onclick = (e) => {
+      $$('.menu.open').forEach(m => m.classList.remove('open'));
+      menu.classList.toggle('open');
+      e.stopPropagation();
+    };
+    
+    sBtn.onclick = (e) => {
+      if (state.sort.col === colKey) {
+        state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sort = { col: colKey, dir: 'asc' };
+      }
+      state.page = 1;
+      render();
+      e.stopPropagation();
+    };
+  });
+  
+  // Close menus when clicking elsewhere
+  document.addEventListener('click', () => {
+    $$('.menu.open').forEach(m => m.classList.remove('open'));
+  });
+}
+
+function buildMenu(menu, colKey) {
+  menu.innerHTML = '';
+  
+  // Search row
+  const row1 = document.createElement('div');
+  row1.className = 'row';
+  
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'input';
+  input.placeholder = 'Search in column...';
+  input.value = state.filters[colKey].text;
+  
+  const clear = document.createElement('button');
+  clear.className = 'btn';
+  clear.textContent = 'Clear';
+  
+  row1.append(input, clear);
+  
+  // Scrollable options
+  const scroll = document.createElement('div');
+  scroll.className = 'scroll';
+  
+  const uniqueValues = uniqueVals(state.data, colKey);
+  if (uniqueValues.length === 0) {
+    scroll.innerHTML = '<div class="item muted">No values found</div>';
+  } else {
+    uniqueValues.forEach(v => {
+      const label = document.createElement('label');
+      label.className = 'item';
+      
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = state.filters[colKey].selected.has(String(v));
+      
+      const text = document.createElement('span');
+      if (colKey === 'timeMs') {
+        text.textContent = formatTime(Number(v) || 0);
+      } else {
+        text.textContent = v || '(empty)';
+      }
+      
+      label.append(cb, text);
+      scroll.appendChild(label);
+      
+      cb.addEventListener('change', () => {
+        const set = state.filters[colKey].selected;
+        if (cb.checked) {
+          set.add(String(v));
+        } else {
+          set.delete(String(v));
+        }
+      });
+    });
+  }
+  
+  // Action buttons
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  
+  const apply = document.createElement('button');
+  apply.className = 'btn';
+  apply.textContent = 'Apply Filter';
+  
+  const reset = document.createElement('button');
+  reset.className = 'btn';
+  reset.textContent = 'Reset';
+  
+  actions.append(apply, reset);
+  menu.append(row1, scroll, actions);
+  
+  // Event listeners
+  input.addEventListener('input', () => {
+    state.filters[colKey].text = input.value;
+  });
+  
+  clear.addEventListener('click', () => {
+    input.value = '';
+    state.filters[colKey].text = '';
+  });
+  
+  apply.addEventListener('click', () => {
+    state.page = 1;
+    render();
+    menu.classList.remove('open');
+  });
+  
+  reset.addEventListener('click', () => {
+    state.filters[colKey] = { text: '', selected: new Set() };
+    buildMenu(menu, colKey);
+    state.page = 1;
+    render();
+  });
+}
+
+/*** CONTROLS ***/
+$('#pageSize').addEventListener('change', () => {
+  state.pageSize = Number($('#pageSize').value);
+  state.page = 1;
+  render();
+});
+
+$('#prev').addEventListener('click', () => {
+  state.page--;
+  render();
+});
+
+$('#next').addEventListener('click', () => {
+  state.page++;
+  render();
+});
+
+$('#pageNum').addEventListener('change', () => {
+  state.page = Math.max(1, Number($('#pageNum').value) || 1);
+  render();
+});
+
+$('#refreshBtn').addEventListener('click', () => {
+  if (!state.loading) {
+    refresh();
+  }
+});
+
+// Handle page input enter key
+$('#pageNum').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    state.page = Math.max(1, Number($('#pageNum').value) || 1);
+    render();
+  }
+});
+
+/*** BOOT ***/
+document.addEventListener('DOMContentLoaded', () => {
+  refresh();
+});
+
+// Optional: auto-refresh every 5 minutes
+// setInterval(refresh, 5 * 60 * 1000);
+</script>
+</body>
+</html>
