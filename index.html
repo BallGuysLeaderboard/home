@@ -331,9 +331,19 @@ function render() {
   const sorted = sortRows(filtered);
   const { pageRows, totalPages, totalRows } = paginate(sorted);
   
-  // Update sort button states
+    // Update sort button states
   updateSortButtons();
   
+  // --- Helper to ensure URLs are absolute ---
+  function normalizeUrl(url) {
+    if (!url) return '';
+    url = String(url).trim();
+    if (/^https?:\/\//i.test(url)) return url;        // already absolute
+    if (url.startsWith('//')) return 'https:' + url;  // protocol-relative
+    return 'https://' + url.replace(/^\/+/, '');      // assume https
+  }
+  // ------------------------------------------
+
   if (pageRows.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" class="loading">No results match your filters</td></tr>';
   } else {
@@ -343,8 +353,16 @@ function render() {
         <td><span class="pill">${formatTime(Number(r.timeMs) || 0)}</span></td>
         <td>${escapeAttr(r.map)}</td>
         <td><span class="status ${statusClass(r.status)}">${escapeAttr(r.status || 'Pending')}</span></td>
-        <td>${r.video ? `<a class="link" href="${escapeAttr(r.video)}" target="_blank" rel="noopener">Link to Video</a>` : ''}</td>
-        <td>${r.image ? `<a class="link" href="${escapeAttr(r.image)}" target="_blank" rel="noopener">Link to Image</a>` : ''}</td>
+        <td>${
+          r.video
+            ? `<a class="link" href="${normalizeUrl(r.video)}" target="_blank" rel="noopener">Link to Video</a>`
+            : ''
+        }</td>
+        <td>${
+          r.image
+            ? `<a class="link" href="${normalizeUrl(r.image)}" target="_blank" rel="noopener">Link to Image</a>`
+            : ''
+        }</td>
         <td>${escapeAttr(r.userId)}</td>
       </tr>
     `).join('');
