@@ -16,128 +16,80 @@
     }
     a{color:var(--accent); text-decoration:none}
     a:hover{text-decoration:underline}
-    .wrap{
-      max-width: 900px; margin: 0 auto; padding: 20px 16px;
-    }
-    header{margin-bottom: 12px}
-    h1{font-size: clamp(22px,3.5vw,34px); margin-bottom: 6px}
-    .sub{color: var(--muted); font-size: 14px}
-    .panel{
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      margin: 16px 0;
-    }
-    h2{font-size: clamp(18px,3vw,26px); margin: 10px 0}
-    h3{font-size: clamp(16px,2.5vw,22px); margin: 8px 0}
-    p{margin: 10px 0}
-    ol, ul{margin: 10px 0 10px 1.2em}
-    li{margin: 6px 0}
-    .underline u{ text-underline-offset: 3px; }
+    .wrap{max-width:900px;margin:0 auto;padding:20px 16px}
+    h1{font-size:clamp(22px,3.5vw,34px);margin-bottom:4px}
+    .sub{color:var(--muted);font-size:14px}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin:16px 0}
+    h2{font-size:clamp(18px,3vw,26px);margin:6px 0 10px}
+    p{margin:10px 0}
     .btn-link{
-      display:inline-block; padding:10px 14px; border:1px solid var(--border);
-      background: var(--panel); border-radius: 10px; font-weight: 600;
+      display:inline-block;padding:10px 14px;border:1px solid var(--border);
+      background:var(--panel);border-radius:10px;font-weight:600
     }
-    .top-link{margin-bottom:10px; display:inline-block}
-    .spacer{height:8px}
-    .note{color: var(--muted)}
-    /* Mobile-first already; ensure no horizontal pan */
-    img, table{max-width:100%; height:auto}
+    .block{white-space:pre-wrap} /* preserves your exact line breaks */
+    /* Mobile friendly defaults already ensure no zoom/pan */
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <a class="top-link btn-link" href="/home">← Go back to leaderboard</a>
-      <h1>Rules & Instructions</h1>
-      <p class="sub">Mobile-friendly page — no zooming/panning needed.</p>
-    </header>
+    <p><a class="btn-link" href="/home">← Go back to leaderboard</a></p>
+    <h1>Rules & Instructions</h1>
+    <p class="sub">Please read carefully before attempting a run</p>
 
     <div class="panel">
-      <h2>Instructions to have a “verified” speedrun:</h2>
-      <ol>
-        <li>
-          Enable the speedrun timer before you jump into the map you will speedrun.
-          This can be done by navigating to the homepage of the Ball Guys app
-          —&gt; Settings (Gear Icon in top right) —&gt; Click “Speedrun clock”.
-        </li>
-        <li>
-          <strong>1a.</strong> When you start the map, there should show a red timer that starts running immediately. If you don't see it, try restarting your app.
-        </li>
-        <li>
-          <strong>2.</strong> <strong>Important:</strong> Please start screen recording from before you fire your first shot!<br>
-          <span class="underline"><u>Clarification notes:</u></span>
-          It is generally best practice to respawn after setting up the screen recorder,
-          because our leaderboard will use the official clock time no matter what — NOT from when you start shooting.
-          If you fall in lava and auto respawn after this, there’s no need to begin the hassle of a whole new screen recording,
-          just keep attempting and crop the video afterwards from before the clock was at 00:00 :)
-        </li>
-        <li>
-          <strong>3. IMPORTANT:</strong> Once you have completed a run, DO NOT respawn, and DO NOT end the recording yet — go to the menu, and press “spectate”.
-          This will allow the moderators to see the green timer with your precise and official time :)<br>
-          <span class="underline"><u>Note:</u></span>
-          Runs that neglect to do this final step can still be verified as we will estimate the time — but bare in mind we round up to the nearest second in such cases
-          which may cause your run to be less competitive — so please don't forget this final step :)
-        </li>
-      </ol>
+      <h2>Instructions to have a "verified" speedrun:</h2>
+      <div class="block">
+Go back to leaderboard <a href="/home"></a>
+
+Instructions to have a "verified" speedrun:
+1. Enable the speedrun timer before you jump into the map you will speedrun. This can be done by navigating to the homepage of the Ball Guys app ---> Settings (Gear Icon in top right) ---> Click "Speedrun clock"
+1a. When you start the map, there should show a red timer that starts running immediately. If you don't see it, try restarting your app
+2. Important: Please start screen recording from before you fire your first shot!
+<u>Clarification notes:</u> It is generally best practice to respawn after setting up the screen recorder, because our leaderboard will use the official clock time no matter what- NOT from when you start shooting. if you fall in lava and auto respawn after this, theres no need to begin the hassle of a whole new screen recording, just keep attempting and crop the video afterwards from before the clock was at 00:00 :)
+**3. IMPORTANT: Once you have completed a run, DO NOT respawn, and DO NOT end the recording yet- go to the menu, and press "spectate". This will allow the moderators to see the green timer with your precise and official time :)
+<u>Note:</u> Runs that neglect to do this final step can still be verified as we will estimate the time- but bare in mind we round up to the nearest second in such cases which may cause your run to be less competitive- so please don't forget this final step :)
+      </div>
     </div>
 
     <div class="panel">
-      <h2>Rules to have a “verified” glitchless run:</h2>
-      <ul>
-        <li>Runs must be fully recorded, uncut, unedited, and run from before the start until after the finish.</li>
-        <li>Runs must not use any mods or glitches, yes, even the flying glitch (Sorry guys XD).</li>
-        <li>Pauses of any kind, anything that freezes the clock, or your ball, such as using the control center etc. are not allowed and will cause a run to be rejected.</li>
-      </ul>
-      <p>
-        Verified recordings will be kept in an archive by myself and linked publicly on the
-        <a href="/home">leaderboard</a> for future inspection and transparency. The videos are mainly linked for education and entertainment, but anyone browsing the leaderboard will be able to replay your recording and report foul play/editting should they suspect it, which will cause us to re-review them.
-      </p>
-      <p>
-        If anyone would like to be part of that moderation team to help verify runs, let me (Abe) know through discord!
-        Here is a <a href="https://discord.gg/ballguys" target="_blank" rel="noopener">link</a> to the Ball Guys Discord Server. Once there, Search “Abe” or “icarus1892” in the member search
-        (Additionally, a direct link to the discord can be found at the top right corner of the main menu in ball guys under the gear icon.)
-      </p>
+      <h2>Rules to have a "verified" glitchless run:</h2>
+      <div class="block">
+- Runs must be fully recorded, uncut, unedited, and run from before the start until after the finish
+- Runs must not use any mods or glitches, yes, even the flying glitch (Sorry guys XD)
+- Pauses of any kind, anything that freezes the clock, or your ball, such as using the control center etc. are not allowed and will cause a run to be rejected.
+
+Verified recordings will be kept in an archive by myself and linked publicly on the <a href="/home">leaderboard</a> for future inspection and transparency. The videos are mainly linked for education and entertainment, but anyone browsing the leaderboard will be able to replay your recording and report foul play/editting should they suspect it, which will cause us to re-review them.
+
+If anyone would like to be part of that moderation team to help verify runs, let me (Abe) know through discord! Here is a <a href="https://discord.gg/ballguys" target="_blank" rel="noopener">link</a> to the Ball Guys Discord Server. Once there, Search "Abe" or "icarus1892" in the member search (Additionally, a direct link to the discord can be found at the top right corner of the main menu in ball guys under the gear icon.)
+      </div>
     </div>
 
     <div class="panel">
       <h2>Rules to submit:</h2>
-      <p>
-        — Use this <a href="/home/submissions">form</a><br>
-        — or —<br>
-        — Contact me on <a href="https://discord.gg/ballguys" target="_blank" rel="noopener">discord</a> (contact info is right above this)
-      </p>
+      <div class="block">
+- Use this <a href="/home/submissions">form</a>
+or
+- Contact me on <a href="https://discord.gg/ballguys" target="_blank" rel="noopener">discord</a> (contact info is right above this)
 
-      <h3>I will need:</h3>
-      <ul>
-        <li>User ID: (Ball Guys Home screen &gt; settings &gt; Copy User ID)</li>
-        <li>In Game Display name</li>
-        <li>Map name</li>
-        <li>
-          Link to your video or screenshot: If you're submitting through the form, you may use any image or video hosting sites of your choosing (Youtube, Google Drive, imgur, dropbox, etc.)
-          <br><span class="underline"><u>Note:</u></span> If submitting through discord, you can simply send the media to me through discord.
-        </li>
-      </ul>
+I will need:
+- User ID: (Ball Guys Home screen> settings> Copy User ID)
+- In Game Display name
+- Map name
+- Link to your video or screenshot: If you're submitting through the form, you may use any image or video hosting sites of your choosing (Youtube, Google Drive, imgur, dropbox, etc.)
+(<u>Note:</u> If submitting through discord, you can simply send the media to me through discord)
 
-      <p>
-        One caveat — Screenshots will be considered “unverified” by default. Not because I don't trust anybody in specific, just because I want standard to be applied consistently to all runs :)
-      </p>
+One caveat- Screenshots will be considered "unverified" by default. not because I don't trust anybody in specific, just because I want standard to be applied to consistently to all runs :)
 
-      <h3>For the time being, submissions will be filed into 3 categories:</h3>
-      <ol>
-        <li><strong>Unverified:</strong> Simple screenshots with no recording, or rejected videos that didn't follow the rules and instructions above</li>
-        <li><strong>Pending Verification:</strong> Recordings that were submitted but not yet reviewed in detail by moderation team</li>
-        <li><strong>Verified:</strong> Recording has been reviewed and approved by the moderation team</li>
-      </ol>
+For the time being, submissions will be filed into 3 categories:
+1- Unverified: Simple screenshots with no recording, or rejected videos that didn't follow the rules and instructions above
+2- Pending Verification: Recordings that were submitted but not yet reviewed in detail by moderation team
+3- Verified: Recording has been reviewed and approved by the moderation team
 
-      <p>
-        To be clear, ALL submitted runs (at least a screenshot of your time) will be tracked on the leaderboard, just marked with their corresponding categorization! :)
-      </p>
+To be clear, ALL submitted runs (at least a screenshot of your time) will be tracked on the leaderboard, just marked with their corresponding categorization! :)
+
+BACK TO LEADERBOARD <a href="/home"></a>
+      </div>
     </div>
-
-    <p class="spacer"></p>
-    <p><a class="btn-link" href="/home">BACK TO LEADERBOARD</a></p>
   </div>
 </body>
 </html>
