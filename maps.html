@@ -118,7 +118,7 @@
       <div class="grid">
         <div class="grid-scroll">
           <table id="runsTable">
-            <thead><tr><th>Nickname</th><th>Time</th><th>Map Name</th><th>Status</th></tr></thead>
+            <thead><tr><th>#</th><th>Nickname</th><th>Time</th><th>Map Name</th><th>Status</th></tr></thead>
             <tbody><tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Loading…</td></tr></tbody>
           </table>
         </div>
@@ -130,7 +130,7 @@
 
 <script>
 const ENDPOINT='https://script.google.com/macros/s/AKfycbxfbyHMjpva08fMkfmo26JDVtVFE_fbIpkouvB8Bw2YF3QflbiGR4oNdT-CI6Mf6Ug4KA/exec';
-const state={data:[],filters:{},sort:{col:'map',dir:'asc'},pageSize:100,page:1,loading:false};
+const state={data:[],filters:{},sort:{col:'subs',dir:'desc'},pageSize:100,page:1,loading:false};
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 
 function showError(msg){
@@ -330,7 +330,24 @@ async function openRunsModal(enc){
     const j=await getJSON({action:'runsForMap',map:mapName});
     const rows=Array.isArray(j.rows)?j.rows:[];
     if(!rows.length){tbody.innerHTML='<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">No runs found.</td></tr>'; return;}
-    tbody.innerHTML=rows.map(r=>`<tr><td>${r[0]||''}</td><td>${formatTime(r[1])}</td><td>${r[2]||''}</td><td>${r[3]||''}</td></tr>`).join('');
+    // sort by time ascending (fastest first)
+rows.sort((a,b)=>(+a[1]||Infinity)-(+b[1]||Infinity));
+
+tbody.innerHTML = rows.map((r,i)=>{
+  const rank = i + 1;
+  let medal = '';
+  if(rank===1) medal = '🥇';
+  else if(rank===2) medal = '🥈';
+  else if(rank===3) medal = '🥉';
+  return `<tr>
+    <td>${rank} ${medal}</td>
+    <td>${r[0]||''}</td>
+    <td>${formatTime(r[1])}</td>
+    <td>${r[2]||''}</td>
+    <td>${r[3]||''}</td>
+  </tr>`;
+}).join('');
+
   }catch(e){tbody.innerHTML=`<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Failed: ${e.message}</td></tr>`;}
 }
 window.openRunsModal=openRunsModal;
