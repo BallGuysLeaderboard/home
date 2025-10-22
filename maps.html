@@ -55,7 +55,7 @@
   .modal header{position:relative;background:linear-gradient(180deg,rgba(22,26,43,.7),rgba(22,26,43,.4));border-bottom:1px solid var(--border)}
   .modal h3{font-size:18px}
   .modal .content{padding:12px 16px 16px}
-  .close-x{position:absolute;right:10px;top:10px;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:4px 8px;cursor:pointer}
+  .close-x{position:absolute;right:10px;top:10px;border:1px solid var(--border);background:transparent;color:#e9efff;border-radius:8px;padding:4px 8px;cursor:pointer}
 
   @media (max-width:720px){
     .container{padding:12px}
@@ -68,7 +68,7 @@
 <body>
 <header>
   <div class="container">
-    <h1>All Maps we track</h1>
+    <h1>All Maps we track 🗺️</h1>
     <div class="sub-lg">Below is a list of every Speedrun map/category we currently track on our website along with the best times for each!</div>
     <div class="sub-sm wrap" style="margin-top:8px">
       Some of these maps don't have an official name, so we have named some of these maps ourselves just for the purposes of referencing it on this website, like "Claustrophilia"(Impossible #3) or "Lemon Squeezer" (ID: Medium #2)! If we mistakenly named a map incorrectly which already had a name, please contact Abe (icarus1892) or Oli (interruptingpig) on the ball guys <a class="link" href="https://discord.gg/ballguys" target="_blank" rel="noopener">discord</a> and we will fix it
@@ -79,7 +79,7 @@
       <span class="muted" id="rowInfo"></span>
       <span class="muted" style="margin-left:auto">Rows per page</span>
       <select id="pageSize" class="select">
-        <option>5</option><option selected>10</option><option>25</option><option>50</option><option>100</option>
+        <option>5</option><option>10</option><option>25</option><option>50</option><option selected>100</option>
       </select>
     </div>
   </div>
@@ -156,15 +156,16 @@
 
 <script>
 /*** CONFIG ***/
-// Your deployed Apps Script endpoint for maps:
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxfbyHMjpva08fMkfmo26JDVtVFE_fbIpkouvB8Bw2YF3QflbiGR4oNdT-CI6Mf6Ug4KA/exec';
+const JSONP_TIMEOUT_MS = 25000; // longer to avoid cold-start timeouts
+const JSONP_RETRIES = 2;        // retry a couple of times
 
 /*** STATE ***/
 const state = {
   data: [],
   filters: {},
   sort: { col: 'map', dir: 'asc' },
-  pageSize: 10,
+  pageSize: 100,  // default 100
   page: 1,
   loading: false
 };
@@ -187,31 +188,22 @@ COLS.forEach(c => {
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
-function showError(msg){
-  const c = $('#errorContainer');
-  c.innerHTML = `<div class="error">${msg}</div>`;
-  c.style.display = 'block';
-}
-function hideError(){ $('#errorContainer').style.display = 'none'; }
+function showError(msg){ const c=$('#errorContainer'); c.innerHTML=`<div class="error">${msg}</div>`; c.style.display='block'; }
+function hideError(){ $('#errorContainer').style.display='none'; }
 
 function toDriveThumb(url){
   if(!url) return '';
   const s = String(url);
-  // supports: file/d/ID/, open?id=ID, uc?id=ID, sharing links, etc.
   let id = null;
-  const patterns = [
-    /\/d\/([-\w]{10,})/i,
-    /id=([-\w]{10,})/i,
-    /\/folders\/([-\w]{10,})/i // (if someone pasted a folder; won’t render, but we try)
-  ];
-  for (const re of patterns){
-    const m = s.match(re);
-    if (m && m[1]) { id = m[1]; break; }
-  }
-  if (!id && /[-\w]{25,}/.test(s)) id = s.match(/[-\w]{25,}/)[0];
-  if (!id) return s; // fallback raw
-  // Use Drive thumbnail service (reliable for public files)
+  const patterns = [/\/d\/([-\w]{10,})/i, /id=([-\w]{10,})/i, /[-\w]{25,}/];
+  for (const re of patterns){ const m=s.match(re); if(m && m[1]){ id=m[1]; break; } if(!id && m && m[0] && re===patterns[2]) id=m[0]; }
+  if(!id) return s;
+  // Try thumbnail first, fallback to uc?export=view if it fails to load
   return `https://drive.google.com/thumbnail?id=${id}&sz=w120`;
+}
+function drivePreviewFallback(imgEl, url){
+  const m = String(url).match(/[-\w]{25,}/);
+  if (m) imgEl.src = `https://drive.google.com/uc?export=view&id=${m[0]}`;
 }
 
 function formatTime(ms){
@@ -230,17 +222,15 @@ function parseBest(raw){
   const m = t.match(/^(\d+)\s*by\s*(.+?)(\s*'{1,3})?$/i);
   if(!m){ return {label:String(raw), level:0, ms:null, user:''}; }
   const ms = Number(m[1]); const user = m[2].trim();
-  const ticks = (m[3]||'').replace(/\s+/g,''); const level = ticks.length; // 1,2,3
+  const ticks = (m[3]||'').replace(/\s+/g,''); const level = ticks.length;
   return {label:`${formatTime(ms)} by ${user}`, level, ms, user};
 }
 function levelClass(n){ return n>=3?'red':(n===2?'yellow':(n===1?'green':'')); }
 
 function uniqueVals(rows, col){ return [...new Set(rows.map(r => String(r[col] ?? '')))].sort(); }
 
-function normalizeUrl(url){ return String(url||'').trim(); }
-
-/*** JSONP (avoids CORS) ***/
-function jsonp(url, params={}){
+/*** JSONP with retry/backoff ***/
+function jsonp(url, params={}, timeoutMs=JSONP_TIMEOUT_MS){
   return new Promise((resolve, reject)=>{
     const cb = 'cb_' + Math.random().toString(36).slice(2);
     params.callback = cb;
@@ -251,9 +241,23 @@ function jsonp(url, params={}){
     window[cb] = (data)=>{ if(done) return; done=true; resolve(data); cleanup(); };
     s.onerror = ()=>{ if(done) return; done=true; reject(new Error('Network error')); cleanup(); };
     document.body.appendChild(s);
-    const t = setTimeout(()=>{ if(done) return; done=true; reject(new Error('Timeout')); cleanup(); }, 12000);
+    const t = setTimeout(()=>{ if(done) return; done=true; reject(new Error('Timeout')); cleanup(); }, timeoutMs);
     function cleanup(){ try{ delete window[cb]; }catch(_){}; try{ s.remove(); }catch(_){}; clearTimeout(t); }
   });
+}
+async function jsonpWithRetry(url, params){
+  let attempt = 0;
+  while (attempt <= JSONP_RETRIES){
+    try{
+      // cache-bust each attempt
+      const res = await jsonp(url, {...params, _: Date.now()}, JSONP_TIMEOUT_MS + attempt*5000);
+      return res;
+    }catch(err){
+      if (attempt === JSONP_RETRIES) throw err;
+      await new Promise(r=>setTimeout(r, 800*(attempt+1)*(attempt+1)));
+      attempt++;
+    }
+  }
 }
 
 /*** DATA IO ***/
@@ -262,11 +266,12 @@ async function fetchMaps(){
   state.loading = true;
   try{
     hideError();
-    const j = await jsonp(ENDPOINT, {action:'maps', _:Date.now()});
+    const j = await jsonpWithRetry(ENDPOINT, {action:'maps'});
     if(!j || !Array.isArray(j.rows)) throw new Error('Bad response');
     state.data = j.rows.map(r=>({
       thumb: toDriveThumb(r.thumb),
-      author: r.author || '',
+      thumbRaw: r.thumb || '',
+      author: r.author || '',  // empty is empty (no "Unknown")
       map: r.map || '',
       best: r.best || '',
       subs: r.subs || '',
@@ -292,14 +297,11 @@ function applyFilters(rows){
     return true;
   });
 }
-
 function sortRows(rows){
   const {col, dir} = state.sort;
   const m = dir === 'asc' ? 1 : -1;
-
   return rows.slice().sort((a,b)=>{
     if (col === 'best'){
-      // sort by parsed milliseconds, then author/map for stability
       const pa = parseBest(a.best).ms ?? Number.MAX_SAFE_INTEGER;
       const pb = parseBest(b.best).ms ?? Number.MAX_SAFE_INTEGER;
       if (pa !== pb) return (pa - pb) * m;
@@ -310,7 +312,6 @@ function sortRows(rows){
     return String(a[col] ?? '').localeCompare(String(b[col] ?? ''), undefined, {numeric:true, sensitivity:'base'}) * m;
   });
 }
-
 function paginate(rows){
   const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
   state.page = clamp(state.page, 1, totalPages);
@@ -338,10 +339,13 @@ function render(){
   let html = '';
   for (const r of pageRows){
     const best = parseBest(r.best);
+    const imgSrc = r.thumb || ''; // thumbnail URL (may be empty)
     html += `
       <tr>
-        <td><img class="thumb" src="${normalizeUrl(r.thumb)}" loading="lazy" alt="thumb" onerror="this.style.visibility='hidden'"></td>
-        <td>${r.author ? r.author : 'Unknown'}</td>
+        <td>
+          ${imgSrc ? `<img class="thumb" src="${imgSrc}" loading="lazy" alt="thumb" onerror="drivePreviewFallback(this, '${String(r.thumbRaw).replace(/'/g,"&#39;")}')">` : ''}
+        </td>
+        <td>${r.author}</td>
         <td class="wrap">${r.map}</td>
         <td>
           ${best.level>0 ? `
@@ -360,7 +364,6 @@ function render(){
 
   $('#rowInfo').textContent = `Showing ${pageRows.length} of ${filtered.length} rows (${state.data.length} total)`;
 
-  // simple arrow-key paging
   document.onkeydown = (e)=>{
     if(e.key==='ArrowRight'){ state.page = clamp(state.page+1,1,totalPages); render(); }
     if(e.key==='ArrowLeft'){ state.page = clamp(state.page-1,1,totalPages); render(); }
@@ -381,7 +384,7 @@ function updateSortButtons(){
   });
 }
 
-/*** HEADER MENUS (search + multi-select like home page) ***/
+/*** HEADER MENUS ***/
 function setupHeaders(rebuild=false){
   $$('thead th').forEach(th=>{
     const colKey = th.getAttribute('data-col');
@@ -389,7 +392,6 @@ function setupHeaders(rebuild=false){
     const fBtn = th.querySelector('.hdr-btn.filter');
     const sBtn = th.querySelector('.hdr-btn.sort');
 
-    // Skip filter tools for thumbnail
     if (colKey === 'thumb'){
       if (fBtn) fBtn.style.display='none';
       if (sBtn) sBtn.style.display='none';
@@ -518,7 +520,7 @@ function buildMenu(menu, colKey){
 
 /*** CONTROLS ***/
 $('#pageSize').addEventListener('change', ()=>{
-  state.pageSize = Number($('#pageSize').value)||10;
+  state.pageSize = Number($('#pageSize').value)||100;
   state.page = 1;
   render();
 });
@@ -534,7 +536,7 @@ async function openRunsModal(encodedMap){
   tbody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center; padding:20px">Loading…</td></tr>`;
 
   try{
-    const j = await jsonp(ENDPOINT, {action:'runsForMap', map: mapName, _: Date.now()});
+    const j = await jsonpWithRetry(ENDPOINT, {action:'runsForMap', map: mapName});
     const rows = Array.isArray(j.rows) ? j.rows : [];
     if (!rows.length){
       tbody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center; padding:20px">No runs found for this map.</td></tr>`;
@@ -563,7 +565,7 @@ $('#runsModal').addEventListener('click', (e)=>{ if(e.target.id==='runsModal') e
 
 /*** BOOT ***/
 document.addEventListener('DOMContentLoaded', ()=>{
-  const sel = document.getElementById('pageSize'); sel.value = '10';
+  const sel = document.getElementById('pageSize'); sel.value = '100';
   fetchMaps();
 });
 </script>
