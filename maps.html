@@ -21,7 +21,15 @@
 
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
-  header{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70));backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+
+  /* change 1: header is no longer sticky so content never scrolls under it */
+  header{
+    position:static; /* was: sticky */
+    background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70));
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border)
+  }
+
   .container{max-width:1200px;margin:0 auto;padding:16px}
   h1{font-size:clamp(22px,3vw,32px)}
   .sub-lg{font-size:clamp(16px,2.2vw,20px);margin-top:6px}
@@ -65,8 +73,17 @@
   .hdr-tools{display:inline-flex;gap:6px;margin-left:6px}
   .hdr-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--border);background:var(--panel);border-radius:6px;cursor:pointer;font-size:12px}
   .hdr-btn.sort.active{border-color:rgba(255,214,107,.35);background:rgba(255,214,107,.1)}
+
+  /* change 2: filter menu items are on separate lines with scroll area */
   .menu{position:absolute;top:100%;left:0;margin-top:8px;width:min(360px,90vw);background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:10px;display:none;z-index:1000;max-height:70vh;overflow:auto}
   .menu.open{display:block}
+  .menu .row{display:flex;gap:8px}
+  .menu .scroll{margin-top:8px;border:1px solid var(--border);border-radius:8px;max-height:280px;overflow:auto}
+  .menu .item{display:block;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.05)}
+  .menu .item:last-child{border-bottom:none}
+  .menu .item input{margin-right:8px;vertical-align:middle}
+  .menu .actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end}
+
   .pill{font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.04);display:inline-block;white-space:nowrap}
   .status-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;user-select:none}
   .dot{width:12px;height:12px;border-radius:50%}
@@ -307,7 +324,7 @@ function setupHeaders(rebuild=false){
   $$('thead th').forEach(th=>{
     const colKey=th.getAttribute('data-col'); if(!colKey || colKey==='thumb') return;
     const fBtn=th.querySelector('.hdr-btn.filter'); const sBtn=th.querySelector('.hdr-btn.sort');
-    let menu=th.querySelector('.menu'); if(!menu){menu=document.createElement('div');menu.className='menu';th.appendChild(menu);}
+    let menu=th.querySelector('div.menu'); if(!menu){menu=document.createElement('div');menu.className='menu';th.appendChild(menu);}
     if(rebuild || !menu.dataset.wired){ buildMenu(menu,colKey); menu.dataset.wired='1'; }
     if(fBtn){ fBtn.onclick=(e)=>{ $$('.menu.open').forEach(m=>m.classList.remove('open')); menu.classList.toggle('open'); e.stopPropagation(); }; }
     if(sBtn){ sBtn.onclick=(e)=>{ state.sort.col===colKey ? state.sort.dir=(state.sort.dir==='asc'?'desc':'asc') : state.sort={col:colKey,dir:'asc'}; state.page=1; render(); e.stopPropagation(); }; }
@@ -366,22 +383,22 @@ async function openRunsModal(enc){
     const rows=Array.isArray(j.rows)?j.rows:[];
     if(!rows.length){tbody.innerHTML='<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">No runs found.</td></tr>'; return;}
     // sort by time ascending (fastest first)
-rows.sort((a,b)=>(+a[1]||Infinity)-(+b[1]||Infinity));
+    rows.sort((a,b)=>(+a[1]||Infinity)-(+b[1]||Infinity));
 
-tbody.innerHTML = rows.map((r,i)=>{
-  const rank = i + 1;
-  let medal = '';
-  if(rank===1) medal = '🥇';
-  else if(rank===2) medal = '🥈';
-  else if(rank===3) medal = '🥉';
-  return `<tr>
-    <td>${rank} ${medal}</td>
-    <td>${r[0]||''}</td>
-    <td>${formatTime(r[1])}</td>
-    <td>${r[2]||''}</td>
-    <td>${r[3]||''}</td>
-  </tr>`;
-}).join('');
+    tbody.innerHTML = rows.map((r,i)=>{
+      const rank = i + 1;
+      let medal = '';
+      if(rank===1) medal = '🥇';
+      else if(rank===2) medal = '🥈';
+      else if(rank===3) medal = '🥉';
+      return `<tr>
+        <td>${rank} ${medal}</td>
+        <td>${r[0]||''}</td>
+        <td>${formatTime(r[1])}</td>
+        <td>${r[2]||''}</td>
+        <td>${r[3]||''}</td>
+      </tr>`;
+    }).join('');
 
   }catch(e){tbody.innerHTML=`<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Failed: ${e.message}</td></tr>`;}
 }
