@@ -8,50 +8,58 @@
 <link rel="shortcut icon" href="/home/image1.png?v=2">
 <link rel="apple-touch-icon" href="/home/image1.png?v=2">
 <style>
-  :root{
-    --bg:#0f1220; --panel:#161a2b; --accent:#7bdcff; --muted:#9aa4bf; --text:#e9efff; --border:rgba(255,255,255,.08);
-  }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.4;}
-  header{position:sticky; top:0; z-index:2; background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70)); backdrop-filter:blur(6px); border-bottom:1px solid var(--border)}
-  .container{max-width:1200px; margin:0 auto; padding:16px}
-  h1{margin:0; font-size:clamp(22px,3vw,32px)}
-  .sub-lg{font-size:clamp(16px,2.2vw,20px); margin-top:6px}
-  .sub-sm{color:var(--muted); font-size:13px; margin-top:6px}
-  .toolbar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px}
-  .btn{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center}
+  :root{--bg:#0f1220; --panel:#161a2b; --accent:#7bdcff; --muted:#9aa4bf; --text:#e9efff; --border:rgba(255,255,255,.08);}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
+  header{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70));backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+  .container{max-width:1200px;margin:0 auto;padding:16px}
+  h1{font-size:clamp(22px,3vw,32px)}
+  .sub-lg{font-size:clamp(16px,2.2vw,20px);margin-top:6px}
+  .sub-sm{color:var(--muted);font-size:13px;margin-top:6px}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .btn{padding:10px 12px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
   .btn:hover{border-color:#2a3150}
-  .select,.input{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; font-size:14px;}
-  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:visible}
-  .grid-scroll{width:100%; overflow:auto; border-radius:16px}
-  table{width:100%; border-collapse:collapse}
-  thead th{position:relative; text-align:left; padding:12px; font-size:14px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,rgba(22,26,43,.5),rgba(22,26,43,0))}
-  tbody td{padding:12px; border-bottom:1px solid var(--border); vertical-align:top}
+  .select,.input{padding:10px 12px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;font-size:14px}
+  .grid{margin:16px auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:visible}
+  .grid-scroll{width:100%;overflow:auto;border-radius:16px}
+  table{width:100%;border-collapse:collapse}
+  thead th{position:relative;text-align:left;padding:12px;font-size:14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(22,26,43,.5),rgba(22,26,43,0))}
+  tbody td{padding:12px;border-bottom:1px solid var(--border);vertical-align:top}
   tbody tr:hover{background:rgba(255,255,255,.02)}
   .muted{color:var(--muted)}
-  a.link{color:var(--accent); text-decoration:none}
+  a.link{color:var(--accent);text-decoration:none}
   a.link:hover{text-decoration:underline}
-  .pill{font-size:12px; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:rgba(255,255,255,.04); display:inline-inline; white-space:nowrap}
-  .thumb{width:56px; height:56px; object-fit:cover; border-radius:10px; border:1px solid var(--border); background:#0b0e1a}
-  .wrap{white-space:normal; word-break:break-word}
-  .status-chip{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none}
-  .dot{width:12px; height:12px; border-radius:50%}
+  .thumb{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:#0b0e1a}
+  .wrap{white-space:normal;word-break:break-word}
+  .hdr-tools{display:inline-flex;gap:6px;margin-left:6px}
+  .hdr-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--border);background:var(--panel);border-radius:6px;cursor:pointer;font-size:12px}
+  .hdr-btn.sort.active{border-color:rgba(255,214,107,.35);background:rgba(255,214,107,.1)}
+  .menu{position:absolute;top:100%;left:0;margin-top:8px;width:min(360px,90vw);background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:10px;display:none;z-index:1000;max-height:70vh;overflow:auto}
+  .menu.open{display:block}
+  .menu .row{display:flex;gap:8px;margin-bottom:8px}
+  .menu .scroll{max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:6px}
+  .menu .item{display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer}
+  .menu .item:hover{background:rgba(255,255,255,.05)}
+  .menu .actions{display:flex;gap:8px;margin-top:8px}
+  .pill{font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.04);display:inline-block;white-space:nowrap}
+  .status-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;user-select:none}
+  .dot{width:12px;height:12px;border-radius:50%}
   .dot.green{background:#3ad07a}
   .dot.yellow{background:#ffd66b}
   .dot.red{background:#ff7b7b}
+  .error{background:rgba(255,123,123,.1);border:1px solid rgba(255,123,123,.3);color:#ffc7c7;padding:12px;border-radius:8px;margin:16px 0}
 
   /* Modal */
-  .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:10000}
-  .modal{width:min(720px,92vw); background:var(--panel); border:1px solid var(--border); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.4); overflow:hidden}
-  .modal header{position:relative; background:linear-gradient(180deg,rgba(22,26,43,.7),rgba(22,26,43,.4)); border-bottom:1px solid var(--border)}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:10000}
+  .modal{width:min(720px,92vw);background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.4);overflow:hidden}
+  .modal header{position:relative;background:linear-gradient(180deg,rgba(22,26,43,.7),rgba(22,26,43,.4));border-bottom:1px solid var(--border)}
   .modal h3{font-size:18px}
   .modal .content{padding:12px 16px 16px}
-  .close-x{position:absolute; right:10px; top:10px; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:8px; padding:4px 8px; cursor:pointer}
+  .close-x{position:absolute;right:10px;top:10px;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:4px 8px;cursor:pointer}
 
-  /* Mobile tweaks */
-  @media (max-width: 720px){
+  @media (max-width:720px){
     .container{padding:12px}
-    thead th, tbody td{padding:10px}
+    thead th,tbody td{padding:10px}
     .grid-scroll{overflow-x:auto}
     table{min-width:760px}
   }
@@ -61,9 +69,9 @@
 <header>
   <div class="container">
     <h1>All Maps we track</h1>
-    <div class="sub-lg">Below is a list of every Speedrun map/category we track here along with the best times!</div>
+    <div class="sub-lg">Below is a list of every Speedrun map/category we currently track on our website along with the best times for each!</div>
     <div class="sub-sm wrap" style="margin-top:8px">
-      Some of these maps don't have an official name, so we have named some of these maps ourselves just for the purposes of referencing it on this website, like "Claustrophilia"(ID: Impossible #3) or "Lemon Squeezer" (ID: Medium #2)! If we mistakenly named a map incorrectly which already had a name, please contact Abe (icarus1892) or Oli (interruptingpig) on the ball guys <a class="link" href="https://discord.gg/ballguys" target="_blank" rel="noopener">discord</a> and we will fix it
+      Some of these maps don't have an official name, so we have named some of these maps ourselves just for the purposes of referencing it on this website, like "Claustrophilia"(Impossible #3) or "Lemon Squeezer" (ID: Medium #2)! If we mistakenly named a map incorrectly which already had a name, please contact Abe (icarus1892) or Oli (interruptingpig) on the ball guys <a class="link" href="https://discord.gg/ballguys" target="_blank" rel="noopener">discord</a> and we will fix it
     </div>
 
     <div class="toolbar" style="margin-top:12px">
@@ -86,11 +94,26 @@
         <thead>
           <tr>
             <th data-col="thumb">Thumbnail</th>
-            <th data-col="author">Map Author</th>
-            <th data-col="map">Our Map Name</th>
-            <th data-col="best">Best times</th>
-            <th data-col="subs">Total submissions</th>
-            <th data-col="id">Our Map ID</th>
+            <th data-col="author">Map Author
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="map">Our Map Name
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="best">Best times
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="subs">Total submissions
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="id">Our Map ID
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -114,10 +137,10 @@
           <table id="runsTable">
             <thead>
               <tr>
-                <th>Col A</th>
-                <th>Col B</th>
-                <th>Col C</th>
-                <th>Col D</th>
+                <th>Nickname</th>
+                <th>Time</th>
+                <th>Map Name</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -126,39 +149,72 @@
           </table>
         </div>
       </div>
-      <div class="muted" style="margin-top:8px">Showing first 4 columns from Runs for this map.</div>
+      <div class="muted" style="margin-top:8px">Above are the top runs for this map</div>
     </div>
   </div>
 </div>
 
 <script>
 /*** CONFIG ***/
+// Your deployed Apps Script endpoint for maps:
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxfbyHMjpva08fMkfmo26JDVtVFE_fbIpkouvB8Bw2YF3QflbiGR4oNdT-CI6Mf6Ug4KA/exec';
 
 /*** STATE ***/
 const state = {
   data: [],
+  filters: {},
+  sort: { col: 'map', dir: 'asc' },
   pageSize: 10,
   page: 1,
   loading: false
 };
 
+const COLS = [
+  { key: 'thumb', label: 'Thumbnail' },
+  { key: 'author', label: 'Map Author' },
+  { key: 'map', label: 'Our Map Name' },
+  { key: 'best', label: 'Best times' },
+  { key: 'subs', label: 'Total submissions' },
+  { key: 'id', label: 'Our Map ID' }
+];
+
+// init filters (skip thumb)
+COLS.forEach(c => {
+  if (c.key !== 'thumb') state.filters[c.key] = { text: '', selected: new Set() };
+});
+
 /*** HELPERS ***/
 const $ = s => document.querySelector(s);
-function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+const $$ = s => document.querySelectorAll(s);
+function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
 function showError(msg){
-  const c = document.getElementById('errorContainer');
-  c.innerHTML = `<div class="error" style="background:rgba(255,123,123,.1); border:1px solid rgba(255,123,123,.3); color:#ffc7c7; padding:12px; border-radius:8px; margin:16px 0;">${msg}</div>`;
+  const c = $('#errorContainer');
+  c.innerHTML = `<div class="error">${msg}</div>`;
   c.style.display = 'block';
 }
-function hideError(){ const c = document.getElementById('errorContainer'); c.style.display='none'; }
-function toDrivePreview(url){
+function hideError(){ $('#errorContainer').style.display = 'none'; }
+
+function toDriveThumb(url){
   if(!url) return '';
-  // Accept sharing links and file links; return direct preview URL if possible
-  const m = String(url).match(/[-\w]{25,}/);
-  return m ? `https://drive.google.com/uc?export=view&id=${m[0]}` : url;
+  const s = String(url);
+  // supports: file/d/ID/, open?id=ID, uc?id=ID, sharing links, etc.
+  let id = null;
+  const patterns = [
+    /\/d\/([-\w]{10,})/i,
+    /id=([-\w]{10,})/i,
+    /\/folders\/([-\w]{10,})/i // (if someone pasted a folder; won’t render, but we try)
+  ];
+  for (const re of patterns){
+    const m = s.match(re);
+    if (m && m[1]) { id = m[1]; break; }
+  }
+  if (!id && /[-\w]{25,}/.test(s)) id = s.match(/[-\w]{25,}/)[0];
+  if (!id) return s; // fallback raw
+  // Use Drive thumbnail service (reliable for public files)
+  return `https://drive.google.com/thumbnail?id=${id}&sz=w120`;
 }
-function formatTimeMs(ms){
+
+function formatTime(ms){
   ms = Number(ms)||0;
   if(ms<=0) return '0:00.00';
   const total = Math.floor(ms/1000);
@@ -167,23 +223,37 @@ function formatTimeMs(ms){
   const hth = Math.floor((ms%1000)/10);
   return `${m}:${String(s).padStart(2,'0')}.${String(hth).padStart(2,'0')}`;
 }
+
 function parseBest(raw){
-  // Expect patterns like "5700 by kayleigh '''" or "0"
   const t = String(raw||'').trim();
   if(t==='0' || t==='') return {label:'No runs posted', level:0, ms:0, user:''};
   const m = t.match(/^(\d+)\s*by\s*(.+?)(\s*'{1,3})?$/i);
   if(!m){ return {label:String(raw), level:0, ms:null, user:''}; }
-  const ms = Number(m[1]);
-  const user = m[2].trim();
-  const ticks = (m[3]||'').replace(/\s+/g,'');
-  const level = ticks.length; // 1 green, 2 yellow, 3 red
-  return {label:`${formatTimeMs(ms)} by ${user}`, level, ms, user};
+  const ms = Number(m[1]); const user = m[2].trim();
+  const ticks = (m[3]||'').replace(/\s+/g,''); const level = ticks.length; // 1,2,3
+  return {label:`${formatTime(ms)} by ${user}`, level, ms, user};
 }
-function levelClass(n){
-  if(n>=3) return 'red';
-  if(n===2) return 'yellow';
-  if(n===1) return 'green';
-  return '';
+function levelClass(n){ return n>=3?'red':(n===2?'yellow':(n===1?'green':'')); }
+
+function uniqueVals(rows, col){ return [...new Set(rows.map(r => String(r[col] ?? '')))].sort(); }
+
+function normalizeUrl(url){ return String(url||'').trim(); }
+
+/*** JSONP (avoids CORS) ***/
+function jsonp(url, params={}){
+  return new Promise((resolve, reject)=>{
+    const cb = 'cb_' + Math.random().toString(36).slice(2);
+    params.callback = cb;
+    const qs = new URLSearchParams(params).toString();
+    const s = document.createElement('script');
+    let done = false;
+    s.src = `${url}?${qs}`;
+    window[cb] = (data)=>{ if(done) return; done=true; resolve(data); cleanup(); };
+    s.onerror = ()=>{ if(done) return; done=true; reject(new Error('Network error')); cleanup(); };
+    document.body.appendChild(s);
+    const t = setTimeout(()=>{ if(done) return; done=true; reject(new Error('Timeout')); cleanup(); }, 12000);
+    function cleanup(){ try{ delete window[cb]; }catch(_){}; try{ s.remove(); }catch(_){}; clearTimeout(t); }
+  });
 }
 
 /*** DATA IO ***/
@@ -192,76 +262,263 @@ async function fetchMaps(){
   state.loading = true;
   try{
     hideError();
-    const r = await fetch(`${ENDPOINT}?action=maps&_=${Date.now()}`);
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    const j = await r.json();
-    if(!Array.isArray(j.rows)) throw new Error('Bad response');
-    state.data = j.rows.map(row=>({
-      thumb: toDrivePreview(row.thumb),
-      author: row.author,
-      map: row.map,
-      best: row.best,
-      subs: row.subs,
-      id: row.id
+    const j = await jsonp(ENDPOINT, {action:'maps', _:Date.now()});
+    if(!j || !Array.isArray(j.rows)) throw new Error('Bad response');
+    state.data = j.rows.map(r=>({
+      thumb: toDriveThumb(r.thumb),
+      author: r.author || '',
+      map: r.map || '',
+      best: r.best || '',
+      subs: r.subs || '',
+      id: r.id || ''
     }));
+    setupHeaders(true);
+    render();
   }catch(e){
     showError('Failed to load maps: '+e.message);
   }finally{
     state.loading = false;
-    render();
   }
+}
+
+/*** FILTER + SORT + PAGE ***/
+function applyFilters(rows){
+  return rows.filter(r=>{
+    for(const [col,f] of Object.entries(state.filters)){
+      const cell = String(r[col] ?? '');
+      if (f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) return false;
+      if (f.selected.size > 0 && !f.selected.has(cell)) return false;
+    }
+    return true;
+  });
+}
+
+function sortRows(rows){
+  const {col, dir} = state.sort;
+  const m = dir === 'asc' ? 1 : -1;
+
+  return rows.slice().sort((a,b)=>{
+    if (col === 'best'){
+      // sort by parsed milliseconds, then author/map for stability
+      const pa = parseBest(a.best).ms ?? Number.MAX_SAFE_INTEGER;
+      const pb = parseBest(b.best).ms ?? Number.MAX_SAFE_INTEGER;
+      if (pa !== pb) return (pa - pb) * m;
+      return String(a.map).localeCompare(String(b.map), undefined, {numeric:true, sensitivity:'base'}) * m;
+    }
+    const an = Number(a[col]); const bn = Number(b[col]);
+    if (!Number.isNaN(an) && !Number.isNaN(bn)) return (an - bn) * m;
+    return String(a[col] ?? '').localeCompare(String(b[col] ?? ''), undefined, {numeric:true, sensitivity:'base'}) * m;
+  });
 }
 
 function paginate(rows){
   const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
   state.page = clamp(state.page, 1, totalPages);
-  const start = (state.page-1)*state.pageSize;
-  return {pageRows: rows.slice(start, start+state.pageSize), totalPages};
+  const start = (state.page - 1) * state.pageSize;
+  const end = start + state.pageSize;
+  return {pageRows: rows.slice(start, end), totalPages, totalRows: rows.length};
 }
 
 /*** RENDER ***/
 function render(){
-  const tbody = document.querySelector('#grid tbody');
-  if(!state.data.length){
+  const tbody = $('#grid tbody');
+
+  if (!state.data.length){
     tbody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center; padding:40px">No data</td></tr>`;
+    $('#rowInfo').textContent = 'Showing 0 of 0';
     return;
   }
-  const {pageRows, totalPages} = paginate(state.data);
+
+  const filtered = applyFilters(state.data);
+  const sorted = sortRows(filtered);
+  const {pageRows, totalPages} = paginate(sorted);
+
+  updateSortButtons();
+
   let html = '';
-  for(const r of pageRows){
+  for (const r of pageRows){
     const best = parseBest(r.best);
     html += `
       <tr>
-        <td><img class="thumb" src="${r.thumb}" alt="thumb" onerror="this.style.visibility='hidden'"></td>
+        <td><img class="thumb" src="${normalizeUrl(r.thumb)}" loading="lazy" alt="thumb" onerror="this.style.visibility='hidden'"></td>
         <td>${r.author ? r.author : 'Unknown'}</td>
-        <td class="wrap">${r.map||''}</td>
+        <td class="wrap">${r.map}</td>
         <td>
           ${best.level>0 ? `
             <span class="status-chip" onclick="openRunsModal('${encodeURIComponent(r.map)}')">
               <span class="dot ${levelClass(best.level)}"></span>
               ${best.label.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
             </span>
-          ` : `<span class="pill"> ${best.label} </span>`}
+          ` : `<span class="pill">${best.label}</span>`}
         </td>
         <td>${String(r.subs)==='0' ? 'No runs posted' : r.subs}</td>
-        <td>${r.id||''}</td>
+        <td>${r.id}</td>
       </tr>
     `;
   }
   tbody.innerHTML = html;
 
-  const info = document.getElementById('rowInfo');
-  info.textContent = `Showing ${pageRows.length} of ${state.data.length}`;
+  $('#rowInfo').textContent = `Showing ${pageRows.length} of ${filtered.length} rows (${state.data.length} total)`;
 
-  // simple pager (optional): change page with keyboard arrows
+  // simple arrow-key paging
   document.onkeydown = (e)=>{
     if(e.key==='ArrowRight'){ state.page = clamp(state.page+1,1,totalPages); render(); }
     if(e.key==='ArrowLeft'){ state.page = clamp(state.page-1,1,totalPages); render(); }
-  }
+  };
 }
 
-document.getElementById('pageSize').addEventListener('change', ()=>{
-  state.pageSize = Number(document.getElementById('pageSize').value)||10;
+function updateSortButtons(){
+  $$('.hdr-btn.sort').forEach(btn=>{
+    btn.classList.remove('active');
+    const th = btn.closest('th');
+    const colKey = th.getAttribute('data-col');
+    if (state.sort.col === colKey){
+      btn.classList.add('active');
+      btn.textContent = state.sort.dir === 'asc' ? '↑' : '↓';
+    } else {
+      btn.textContent = '⇅';
+    }
+  });
+}
+
+/*** HEADER MENUS (search + multi-select like home page) ***/
+function setupHeaders(rebuild=false){
+  $$('thead th').forEach(th=>{
+    const colKey = th.getAttribute('data-col');
+    const menu = th.querySelector('.menu');
+    const fBtn = th.querySelector('.hdr-btn.filter');
+    const sBtn = th.querySelector('.hdr-btn.sort');
+
+    // Skip filter tools for thumbnail
+    if (colKey === 'thumb'){
+      if (fBtn) fBtn.style.display='none';
+      if (sBtn) sBtn.style.display='none';
+      return;
+    }
+
+    if (rebuild || !menu.dataset.wired){
+      buildMenu(menu, colKey);
+      menu.dataset.wired = '1';
+    }
+
+    menu.addEventListener('click', e=>e.stopPropagation());
+    menu.addEventListener('mousedown', e=>e.stopPropagation());
+    menu.addEventListener('touchstart', e=>e.stopPropagation(), {passive:true});
+
+    if (fBtn){
+      fBtn.onclick = (e)=>{
+        $$('.menu.open').forEach(m=>m.classList.remove('open'));
+        menu.classList.toggle('open');
+        e.stopPropagation();
+      };
+    }
+
+    if (sBtn){
+      sBtn.onclick = (e)=>{
+        if (state.sort.col === colKey) {
+          state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          state.sort = { col: colKey, dir: 'asc' };
+        }
+        state.page = 1;
+        render();
+        e.stopPropagation();
+      };
+    }
+  });
+
+  document.addEventListener('click', ()=> $$('.menu.open').forEach(m=>m.classList.remove('open')));
+}
+
+function buildMenu(menu, colKey){
+  menu.innerHTML = '';
+
+  const row1 = document.createElement('div');
+  row1.className = 'row';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'input';
+  input.placeholder = 'Search in column...';
+  input.value = state.filters[colKey].text;
+
+  const clear = document.createElement('button');
+  clear.className = 'btn';
+  clear.textContent = 'Clear';
+
+  row1.append(input, clear);
+
+  const scroll = document.createElement('div');
+  scroll.className = 'scroll';
+
+  const uniqueValues = uniqueVals(state.data, colKey);
+  if (uniqueValues.length === 0) {
+    scroll.innerHTML = '<div class="item muted">No values found</div>';
+  } else {
+    uniqueValues.forEach(v=>{
+      const label = document.createElement('label');
+      label.className = 'item';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = state.filters[colKey].selected.has(String(v));
+
+      const text = document.createElement('span');
+      if (colKey === 'best') {
+        const p = parseBest(v);
+        text.textContent = p.label;
+      } else {
+        text.textContent = v || '(empty)';
+      }
+
+      label.append(cb, text);
+      scroll.appendChild(label);
+
+      cb.addEventListener('change', ()=>{
+        const set = state.filters[colKey].selected;
+        if (cb.checked) set.add(String(v)); else set.delete(String(v));
+      });
+    });
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+
+  const apply = document.createElement('button');
+  apply.className = 'btn';
+  apply.textContent = 'Apply';
+
+  const reset = document.createElement('button');
+  reset.className = 'btn';
+  reset.textContent = 'Reset';
+
+  actions.append(apply, reset);
+  menu.append(row1, scroll, actions);
+
+  input.addEventListener('input', ()=>{ state.filters[colKey].text = input.value; });
+
+  clear.addEventListener('click', ()=>{
+    input.value = '';
+    state.filters[colKey].text = '';
+  });
+
+  apply.addEventListener('click', ()=>{
+    state.page = 1;
+    render();
+    menu.classList.remove('open');
+  });
+
+  reset.addEventListener('click', ()=>{
+    state.filters[colKey] = { text:'', selected:new Set() };
+    buildMenu(menu, colKey);
+    state.page = 1;
+    render();
+  });
+}
+
+/*** CONTROLS ***/
+$('#pageSize').addEventListener('change', ()=>{
+  state.pageSize = Number($('#pageSize').value)||10;
   state.page = 1;
   render();
 });
@@ -269,33 +526,40 @@ document.getElementById('pageSize').addEventListener('change', ()=>{
 /*** MODAL FOR RUNS ***/
 async function openRunsModal(encodedMap){
   const mapName = decodeURIComponent(encodedMap);
-  document.getElementById('modalTitle').textContent = `Runs for: ${mapName}`;
-  const modal = document.getElementById('runsModal');
+  $('#modalTitle').textContent = `Runs for: ${mapName}`;
+  const modal = $('#runsModal');
   modal.style.display = 'flex';
 
-  const tbody = document.querySelector('#runsTable tbody');
+  const tbody = $('#runsTable tbody');
   tbody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center; padding:20px">Loading…</td></tr>`;
 
   try{
-    const r = await fetch(`${ENDPOINT}?action=runsForMap&map=${encodeURIComponent(mapName)}&_=${Date.now()}`);
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    const j = await r.json();
+    const j = await jsonp(ENDPOINT, {action:'runsForMap', map: mapName, _: Date.now()});
     const rows = Array.isArray(j.rows) ? j.rows : [];
-    if(!rows.length){
+    if (!rows.length){
       tbody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center; padding:20px">No runs found for this map.</td></tr>`;
       return;
     }
+    // Expect [Nickname, Time(ms), Map Name, Status]
     tbody.innerHTML = rows.map(r=>{
-      const cells = r.slice(0,4).map(c=>`<td>${String(c??'')}</td>`).join('');
-      return `<tr>${cells}</tr>`;
+      const nick = r[0] ?? '';
+      const ms   = Number(r[1] ?? 0);
+      const map  = r[2] ?? '';
+      const st   = r[3] ?? '';
+      return `<tr>
+        <td>${String(nick)}</td>
+        <td>${formatTime(ms)}</td>
+        <td>${String(map)}</td>
+        <td>${String(st)}</td>
+      </tr>`;
     }).join('');
   }catch(e){
     tbody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center; padding:20px">Failed to load: ${e.message}</td></tr>`;
   }
 }
 window.openRunsModal = openRunsModal;
-document.getElementById('closeModal').addEventListener('click', ()=>{ document.getElementById('runsModal').style.display='none'; });
-document.getElementById('runsModal').addEventListener('click', (e)=>{ if(e.target.id==='runsModal') e.currentTarget.style.display='none'; });
+$('#closeModal').addEventListener('click', ()=>{ $('#runsModal').style.display='none'; });
+$('#runsModal').addEventListener('click', (e)=>{ if(e.target.id==='runsModal') e.currentTarget.style.display='none'; });
 
 /*** BOOT ***/
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -305,4 +569,3 @@ document.addEventListener('DOMContentLoaded', ()=>{
 </script>
 </body>
 </html>
-
