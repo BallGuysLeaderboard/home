@@ -19,9 +19,10 @@
   .sub-lg{font-size:clamp(16px,2.2vw,20px); margin-top:6px}
   .sub-sm{color:var(--muted); font-size:13px; margin-top:6px}
   .toolbar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px}
-  .btn{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; cursor:pointer; font-size:14px;}
+  .btn{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center}
   .btn:hover{border-color:#2a3150}
   .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .btn.accent{background:linear-gradient(180deg,rgba(123,220,255,.18),rgba(123,220,255,.08)); border-color:rgba(123,220,255,.35)}
   .select,.input{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; font-size:14px;}
   .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:visible}
   .grid-scroll{width:100%; overflow:auto; border-radius:16px}
@@ -59,6 +60,14 @@
   .loading{text-align:center; padding:40px; color:var(--muted)}
   .error{background:rgba(255,123,123,.1); border:1px solid rgba(255,123,123,.3); color:#ffc7c7; padding:12px; border-radius:8px; margin:16px 0;}
 
+  /* Online users badge */
+  .online-indicator{
+    position:fixed; top:8px; right:8px; z-index:10000;
+    padding:6px 10px; border-radius:999px; font-size:12px;
+    background:rgba(123,220,255,.14); border:1px solid rgba(123,220,255,.35); color:#dff6ff;
+    backdrop-filter:blur(6px)
+  }
+
   /* Mobile tweaks */
   @media (max-width: 720px){
     .container{padding:12px}
@@ -70,6 +79,9 @@
 </style>
 </head>
 <body>
+
+<div id="onlineIndicator" class="online-indicator">Online: —</div>
+
 <header>
   <div class="container">
     <h1>Ball Guys Speedrun Leaderboard👑</h1>
@@ -81,6 +93,9 @@
     </div>
 
     <div class="toolbar">
+      <!-- NEW: View All Maps button -->
+      <a class="btn accent" href="/home/maps" id="viewAllMapsBtn">View All Maps!</a>
+
       <label class="muted">Rows per page</label>
       <select id="pageSize" class="select">
         <option>5</option><option selected>10</option><option>25</option><option>50</option><option>100</option>
@@ -155,10 +170,12 @@ const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFY96ZcEnkA7ilt9yaw2X
 const state = {
   data: [],
   filters: {},
-  sort: { col: 'timeMs', dir: 'asc' },
-  pageSize: 10,   // default 10 rows per page
+  // NEW: default to map-frequency-then-time sort
+  sort: { col: 'map', dir: 'desc', strategy: 'mapFreqThenTime' },
+  pageSize: 10,
   page: 1,
-  loading: false
+  loading: false,
+  mapCounts: {} // cache for map frequencies
 };
 
 const COLS = [
@@ -193,11 +210,11 @@ function escapeAttr(s) {
 }
 
 function formatTime(ms) {
-  const totalSeconds = Math.floor(ms / 1000);
+  const totalSeconds = Math.floor((Number(ms) || 0) / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  const hundredths = Math.floor((ms % 1000) / 10);
+  const hundredths = Math.floor(((Number(ms) || 0) % 1000) / 10);
   
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${hundredths.toString().padStart(2, '0')}`;
@@ -220,6 +237,15 @@ function showError(message) {
 
 function hideError() {
   $('#errorContainer').style.display = 'none';
+}
+
+function computeMapCounts(rows){
+  const counts = {};
+  for (const r of rows) {
+    const m = String(r.map ?? '');
+    counts[m] = (counts[m] || 0) + 1;
+  }
+  state.mapCounts = counts;
 }
 
 /*** DATA IO ***/
@@ -257,6 +283,7 @@ async function loadData() {
     }
     
     state.data = j.rows;
+    computeMapCounts(state.data); // NEW: precompute once on load
     return true;
     
   } catch (e) {
@@ -275,6 +302,23 @@ async function loadData() {
     return false;
   } finally {
     state.loading = false;
+  }
+}
+
+// NEW: online users fetcher
+async function loadOnline(){
+  const badge = $('#onlineIndicator');
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(()=>controller.abort(), 6000);
+    const r = await fetch(`${ENDPOINT}?action=online&_=${Date.now()}`, {signal: controller.signal});
+    clearTimeout(timeoutId);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    const n = Number(j.online);
+    badge.textContent = Number.isFinite(n) ? `Online: ${n}` : 'Online: —';
+  } catch(e){
+    badge.textContent = 'Online: —';
   }
 }
 
@@ -299,9 +343,32 @@ function applyFilters(rows) {
 }
 
 function sortRows(rows) {
-  const { col, dir } = state.sort;
+  const { col, dir, strategy } = state.sort;
   const m = dir === 'asc' ? 1 : -1;
-  
+
+  // NEW: map frequency precedence, then fastest time
+  if (strategy === 'mapFreqThenTime') {
+    const counts = state.mapCounts || {};
+    return rows.slice().sort((a,b)=>{
+      const ma = String(a.map ?? ''), mb = String(b.map ?? '');
+      const ca = counts[ma] || 0, cb = counts[mb] || 0;
+
+      // Primary: higher count first
+      if (ca !== cb) return (cb - ca); // always highest first regardless of dir
+
+      // Secondary: faster (lower) time first
+      const ta = Number(a.timeMs) || Number.POSITIVE_INFINITY;
+      const tb = Number(b.timeMs) || Number.POSITIVE_INFINITY;
+      if (ta !== tb) return ta - tb;
+
+      // Tertiary: stable alpha by map then nickname
+      const mapCmp = ma.localeCompare(mb, undefined, {numeric:true, sensitivity:'base'});
+      if (mapCmp !== 0) return mapCmp;
+      return String(a.nickname||'').localeCompare(String(b.nickname||''), undefined, {numeric:true, sensitivity:'base'});
+    });
+  }
+
+  // Fallback: original behavior
   return rows.slice().sort((a, b) => {
     const av = a[col], bv = b[col];
     if (col === 'timeMs') return (Number(av) - Number(bv)) * m;
@@ -328,7 +395,6 @@ function render() {
   const tbody = $('#grid tbody');
   
   if (state.data.length === 0) {
-    // Still show 10 blank rows on first paint if no data
     tbody.innerHTML = Array.from({length: state.pageSize}).map(() => `
       <tr>${'<td class="muted">&nbsp;</td>'.repeat(7)}</tr>
     `).join('');
@@ -336,13 +402,13 @@ function render() {
   }
   
   const filtered = applyFilters(state.data);
+  // NOTE: counts are based on whole dataset per spec; if you prefer filtered, uncomment next line:
+  // computeMapCounts(filtered);
   const sorted = sortRows(filtered);
   const { pageRows, totalPages } = paginate(sorted);
   
-  // Update sort button states
   updateSortButtons();
 
-  // Ensure URLs are absolute
   function normalizeUrl(url) {
     if (!url) return '';
     url = String(url).trim();
@@ -351,7 +417,6 @@ function render() {
     return 'https://' + url.replace(/^\/+/, '');
   }
 
-  // Build rows HTML
   let rowsHtml = pageRows.map(r => `
     <tr>
       <td>${escapeAttr(r.nickname)}</td>
@@ -364,7 +429,6 @@ function render() {
     </tr>
   `).join('');
 
-  // Pad to at least pageSize (e.g., 10) with blank rows
   const needed = Math.max(0, state.pageSize - pageRows.length);
   if (needed > 0) {
     rowsHtml += Array.from({length: needed}).map(() =>
@@ -374,13 +438,11 @@ function render() {
 
   tbody.innerHTML = rowsHtml;
   
-  // Update pagination
   $('#pageTotal').textContent = `/ ${totalPages}`;
   $('#pageNum').value = state.page;
   $('#prev').disabled = state.page <= 1;
   $('#next').disabled = state.page >= totalPages;
   
-  // Update row count info
   const info = $('#rowInfo') || (() => {
     const div = document.createElement('div');
     div.className = 'muted';
@@ -401,7 +463,8 @@ function updateSortButtons() {
     const colKey = th.getAttribute('data-col');
     if (state.sort.col === colKey) {
       btn.classList.add('active');
-      btn.textContent = state.sort.dir === 'asc' ? '↑' : '↓';
+      // When using mapFreqThenTime, we show a dedicated icon
+      btn.textContent = (state.sort.strategy === 'mapFreqThenTime' && colKey === 'map') ? '★' : (state.sort.dir === 'asc' ? '↑' : '↓');
     } else {
       btn.textContent = '⇅';
     }
@@ -421,12 +484,10 @@ function setupHeaders(rebuild = false) {
       menu.dataset.wired = '1';
     }
     
-    // Keep menu open when interacting inside it
     menu.addEventListener('click', e => e.stopPropagation());
     menu.addEventListener('mousedown', e => e.stopPropagation());
     menu.addEventListener('touchstart', e => e.stopPropagation(), {passive:true});
 
-    // Reset listeners
     fBtn.onclick = null; sBtn.onclick = null;
     
     fBtn.onclick = (e) => {
@@ -436,10 +497,20 @@ function setupHeaders(rebuild = false) {
     };
     
     sBtn.onclick = (e) => {
-      if (state.sort.col === colKey) {
-        state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+      if (colKey === 'map') {
+        // Toggle between special strategy and plain alpha sort
+        if (state.sort.strategy === 'mapFreqThenTime') {
+          state.sort = { col: 'map', dir: 'asc', strategy: null };
+        } else {
+          state.sort = { col: 'map', dir: 'desc', strategy: 'mapFreqThenTime' };
+        }
       } else {
-        state.sort = { col: colKey, dir: 'asc' };
+        state.sort.strategy = null;
+        if (state.sort.col === colKey) {
+          state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          state.sort = { col: colKey, dir: 'asc', strategy: null };
+        }
       }
       state.page = 1;
       render();
@@ -447,7 +518,6 @@ function setupHeaders(rebuild = false) {
     };
   });
   
-  // Close menus on outside click
   document.addEventListener('click', () => {
     $$('.menu.open').forEach(m => m.classList.remove('open'));
   });
@@ -456,7 +526,6 @@ function setupHeaders(rebuild = false) {
 function buildMenu(menu, colKey) {
   menu.innerHTML = '';
   
-  // Search row
   const row1 = document.createElement('div');
   row1.className = 'row';
   
@@ -472,7 +541,6 @@ function buildMenu(menu, colKey) {
   
   row1.append(input, clear);
   
-  // Scrollable options
   const scroll = document.createElement('div');
   scroll.className = 'scroll';
   
@@ -502,7 +570,6 @@ function buildMenu(menu, colKey) {
     });
   }
   
-  // Action buttons
   const actions = document.createElement('div');
   actions.className = 'actions';
   
@@ -517,7 +584,6 @@ function buildMenu(menu, colKey) {
   actions.append(apply, reset);
   menu.append(row1, scroll, actions);
   
-  // Events
   input.addEventListener('input', () => {
     state.filters[colKey].text = input.value;
   });
@@ -569,7 +635,6 @@ $('#refreshBtn').addEventListener('click', () => {
   }
 });
 
-// Enter to go to page
 $('#pageNum').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
     state.page = Math.max(1, Number($('#pageNum').value) || 1);
@@ -579,13 +644,14 @@ $('#pageNum').addEventListener('keypress', (e) => {
 
 /*** BOOT ***/
 document.addEventListener('DOMContentLoaded', () => {
-  // Keep default at 10 (no mobile override)
   const sel = document.getElementById('pageSize');
   if (sel) sel.value = String(state.pageSize);
   refresh();
+  loadOnline();
+  setInterval(loadOnline, 30000); // refresh online count every 30s
 });
 
-// Optional: auto-refresh every 5 minutes
+// Optional: auto-refresh table every 5 minutes
 // setInterval(refresh, 5 * 60 * 1000);
 </script>
 </body>
