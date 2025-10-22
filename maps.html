@@ -80,11 +80,26 @@
         <thead>
           <tr>
             <th data-col="thumb">Thumbnail</th>
-            <th data-col="author">Map Author</th>
-            <th data-col="map">Our Map Name</th>
-            <th data-col="best">Best times</th>
-            <th data-col="subs">Total submissions</th>
-            <th data-col="id">Our Map ID</th>
+            <th data-col="author">Map Author
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="map">Our Map Name
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="best">Best times
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="subs">Total submissions
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
+            <th data-col="id">Our Map ID
+              <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
+              <div class="menu"></div>
+            </th>
           </tr>
         </thead>
         <tbody><tr><td colspan="6" class="muted" style="text-align:center;padding:40px">Loading…</td></tr></tbody>
@@ -115,58 +130,215 @@
 
 <script>
 const ENDPOINT='https://script.google.com/macros/s/AKfycbxfbyHMjpva08fMkfmo26JDVtVFE_fbIpkouvB8Bw2YF3QflbiGR4oNdT-CI6Mf6Ug4KA/exec';
-const JSONP_TIMEOUT_MS=25000,JSONP_RETRIES=2;
-const state={data:[],pageSize:100,page:1,loading:false};
+const state={data:[],filters:{},sort:{col:'map',dir:'asc'},pageSize:100,page:1,loading:false};
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 
 function showError(msg){
-  let c=document.getElementById('errorContainer');
-  if(!c){c=document.createElement('div');c.id='errorContainer';document.body.appendChild(c);}
-  c.innerHTML=`<div class="error">${msg}</div>`;c.style.display='block';
+  let c=$('#errorContainer'); if(!c){c=document.createElement('div');c.id='errorContainer';document.body.appendChild(c);}
+  c.innerHTML=`<div class="error">${msg}</div>`; c.style.display='block';
 }
-function hideError(){const c=document.getElementById('errorContainer');if(c)c.style.display='none';}
-function toDriveThumb(u){if(!u)return'';const m=u.match(/[-\w]{25,}/);return m?`https://drive.google.com/thumbnail?id=${m[0]}&sz=w120`:u;}
-function drivePreviewFallback(i,u){const m=u.match(/[-\w]{25,}/);if(m)i.src=`https://drive.google.com/uc?export=view&id=${m[0]}`;}
+function hideError(){const c=$('#errorContainer'); if(c) c.style.display='none';}
+
+function toDriveThumb(u){if(!u)return'';const m=String(u).match(/[-\w]{25,}/);return m?`https://drive.google.com/thumbnail?id=${m[0]}&sz=w120`:u;}
+function drivePreviewFallback(img,u){const m=String(u).match(/[-\w]{25,}/); if(m) img.src=`https://drive.google.com/uc?export=view&id=${m[0]}`;}
+
 function formatTime(ms){ms=+ms||0;if(ms<=0)return'0:00.00';const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60,h=Math.floor((ms%1000)/10);return`${m}:${String(r).padStart(2,'0')}.${String(h).padStart(2,'0')}`;}
-function parseBest(t){t=String(t||'').trim();if(!t||t==='0')return{label:'No runs posted',level:0,ms:0};const m=t.match(/^(\d+)\s*by\s*(.+?)(\s*'{1,3})?$/i);if(!m)return{label:t,level:0};const ms=+m[1],usr=m[2].trim(),lvl=(m[3]||'').trim().length;return{label:`${formatTime(ms)} by ${usr}`,level:lvl,ms,usr};}
+function parseBest(t){t=String(t||'').trim();if(!t||t==='0')return{label:'No runs posted',level:0,ms:0};const m=t.match(/^(\d+)\s*by\s*(.+?)(\s*'{1,3})?$/i);if(!m)return{label:t,level:0};const ms=+m[1],usr=m[2].trim(),lvl=(m[3]||'').replace(/\s+/g,'').length;return{label:`${formatTime(ms)} by ${usr}`,level:lvl,ms,usr};}
 function levelClass(n){return n>=3?'red':n===2?'yellow':n===1?'green':'';}
-function jsonp(u,p={},to=JSONP_TIMEOUT_MS){return new Promise((res,rej)=>{const cb='cb_'+Math.random().toString(36).slice(2);p.callback=cb;const q=new URLSearchParams(p).toString();const s=document.createElement('script');let d=false;s.src=`${u}?${q}`;window[cb]=r=>{if(d)return;d=true;res(r);cl();};s.onerror=()=>{if(d)return;d=true;rej(new Error('Net'));cl();};document.body.appendChild(s);const t=setTimeout(()=>{if(d)return;d=true;rej(new Error('Timeout'));cl();},to);function cl(){delete window[cb];s.remove();clearTimeout(t);}});}
-async function jsonpWithRetry(u,p){let a=0;while(a<=JSONP_RETRIES){try{return await jsonp(u,{...p,_:Date.now()},JSONP_TIMEOUT_MS+a*5000);}catch(e){if(a===JSONP_RETRIES)throw e;await new Promise(r=>setTimeout(r,800*(a+1)*(a+1)));a++;}}}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function uniqueVals(rows,col){return[...new Set(rows.map(r=>String(r[col]??'')))].sort();}
+
+/* FAST PATH: fetch JSON with timeout; FALLBACK: JSONP once if fetch fails */
+async function getJSON(params){
+  const url=ENDPOINT+'?'+new URLSearchParams({...params,_:Date.now()}).toString();
+  // try fetch with 12s timeout
+  try{
+    const ctlr=new AbortController(); const t=setTimeout(()=>ctlr.abort(),12000);
+    const r=await fetch(url,{signal:ctlr.signal,cache:'no-store',credentials:'omit'});
+    clearTimeout(t);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return await r.json();
+  }catch(_){
+    // fallback JSONP (no retries to keep it snappy)
+    return new Promise((resolve,reject)=>{
+      const cb='cb_'+Math.random().toString(36).slice(2);
+      const s=document.createElement('script');
+      const qs=new URLSearchParams({...params,callback:cb,_:Date.now()}).toString();
+      let done=false;
+      s.src=`${ENDPOINT}?${qs}`;
+      window[cb]=(data)=>{ if(done) return; done=true; resolve(data); cleanup(); };
+      s.onerror=()=>{ if(done) return; done=true; reject(new Error('Network')); cleanup(); };
+      document.body.appendChild(s);
+      const tout=setTimeout(()=>{ if(done) return; done=true; reject(new Error('Timeout')); cleanup(); }, 12000);
+      function cleanup(){ try{delete window[cb]}catch{}; try{s.remove()}catch{}; clearTimeout(tout); }
+    });
+  }
+}
 
 async function fetchMaps(){
-  if(state.loading)return;state.loading=true;
-  try{hideError();const j=await jsonpWithRetry(ENDPOINT,{action:'maps'});
-    if(!j||!Array.isArray(j.rows))throw new Error('Bad response');
-    state.data=j.rows.map(r=>({thumb:toDriveThumb(r.thumb),thumbRaw:r.thumb||'',author:r.author||'',map:r.map||'',best:r.best||'',subs:r.subs||'',id:r.id||''}));
-    render();
-  }catch(e){console.error(e);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>showError('Failed to load maps: '+e.message),{once:true});else showError('Failed to load maps: '+e.message);}finally{state.loading=false;}
+  if(state.loading) return; state.loading=true;
+  try{
+    hideError();
+    const j=await getJSON({action:'maps'});
+    if(!j||!Array.isArray(j.rows)) throw new Error('Bad response');
+    state.data=j.rows.map(r=>({
+      thumb:toDriveThumb(r.thumb), thumbRaw:r.thumb||'',
+      author:r.author||'', map:r.map||'', best:r.best||'',
+      subs:r.subs||'', id:r.id||''
+    }));
+    setupHeaders(true); render();
+  }catch(e){
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>showError('Failed to load maps: '+e.message),{once:true});
+    else showError('Failed to load maps: '+e.message);
+  }finally{ state.loading=false; }
 }
 
+/*** FILTER + SORT + PAGE ***/
+function applyFilters(rows){
+  const filters=state.filters;
+  return rows.filter(r=>{
+    for(const [col,f] of Object.entries(filters)){
+      const cell=String(r[col]??'');
+      if(f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) return false;
+      if(f.selected && f.selected.size>0 && !f.selected.has(cell)) return false;
+    }
+    return true;
+  });
+}
+function sortRows(rows){
+  const {col,dir}=state.sort; const m=dir==='asc'?1:-1;
+  return rows.slice().sort((a,b)=>{
+    if(col==='best'){
+      const pa=parseBest(a.best).ms??Number.MAX_SAFE_INTEGER;
+      const pb=parseBest(b.best).ms??Number.MAX_SAFE_INTEGER;
+      if(pa!==pb) return (pa-pb)*m;
+      return String(a.map).localeCompare(String(b.map),undefined,{numeric:true,sensitivity:'base'})*m;
+    }
+    const an=Number(a[col]), bn=Number(b[col]);
+    if(!Number.isNaN(an) && !Number.isNaN(bn)) return (an-bn)*m;
+    return String(a[col]??'').localeCompare(String(b[col]??''),undefined,{numeric:true,sensitivity:'base'})*m;
+  });
+}
+function paginate(rows){
+  const totalPages=Math.max(1,Math.ceil(rows.length/state.pageSize));
+  state.page=clamp(state.page,1,totalPages);
+  const start=(state.page-1)*state.pageSize;
+  return {pageRows:rows.slice(start,start+state.pageSize),totalPages,totalRows:rows.length};
+}
+
+/*** RENDER + FILTER MENUS ***/
 function render(){
-  const g=document.getElementById('grid');if(!g)return;const tb=g.querySelector('tbody');if(!tb)return;
-  if(!state.data.length){tb.innerHTML=`<tr><td colspan="6" class="muted" style="text-align:center;padding:40px">No data</td></tr>`;return;}
-  let html='';for(const r of state.data.slice(0,state.pageSize)){const b=parseBest(r.best);
-    html+=`<tr>
-      <td>${r.thumb?`<img class="thumb" src="${r.thumb}" loading="lazy" onerror="drivePreviewFallback(this,'${r.thumbRaw.replace(/'/g,"&#39;")}')">`:''}</td>
-      <td>${r.author}</td>
-      <td class="wrap">${r.map}</td>
-      <td>${b.level?`<span class="status-chip" onclick="openRunsModal('${encodeURIComponent(r.map)}')"><span class="dot ${levelClass(b.level)}"></span>${b.label}</span>`:`<span class="pill">${b.label}</span>`}</td>
-      <td>${r.subs==='0'?'No runs posted':r.subs}</td>
-      <td>${r.id}</td></tr>`;}
-  tb.innerHTML=html;
+  const grid=$('#grid'); if(!grid) return; const tbody=grid.querySelector('tbody'); if(!tbody) return;
+
+  if(!state.data.length){
+    tbody.innerHTML=`<tr><td colspan="6" class="muted" style="text-align:center;padding:40px">No data</td></tr>`;
+    const info=$('#rowInfo'); if(info) info.textContent='Showing 0 of 0';
+    return;
+  }
+
+  const filtered=applyFilters(state.data);
+  const sorted=sortRows(filtered);
+  const {pageRows,totalPages}=paginate(sorted);
+  updateSortButtons();
+
+  let html='';
+  for(const r of pageRows){
+    const b=parseBest(r.best);
+    html+=`
+      <tr>
+        <td>${r.thumb?`<img class="thumb" src="${r.thumb}" loading="lazy" alt="thumb" onerror="drivePreviewFallback(this,'${r.thumbRaw.replace(/'/g,"&#39;")}')">`:''}</td>
+        <td>${r.author}</td>
+        <td class="wrap">${r.map}</td>
+        <td>${
+          b.level?`<span class="status-chip" onclick="openRunsModal('${encodeURIComponent(r.map)}')"><span class="dot ${levelClass(b.level)}"></span>${b.label.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`
+                 :`<span class="pill">${b.label}</span>`
+        }</td>
+        <td>${r.subs==='0'?'No runs posted':r.subs}</td>
+        <td>${r.id}</td>
+      </tr>`;
+  }
+  tbody.innerHTML=html;
+
+  const info=$('#rowInfo');
+  if(info) info.textContent=`Showing ${pageRows.length} of ${filtered.length} rows (${state.data.length} total)`;
+
+  document.onkeydown=(e)=>{ if(e.key==='ArrowRight'){state.page=clamp(state.page+1,1,totalPages);render();} if(e.key==='ArrowLeft'){state.page=clamp(state.page-1,1,totalPages);render();} };
 }
 
-async function openRunsModal(m){
-  const n=decodeURIComponent(m);document.getElementById('modalTitle').textContent=`Runs for: ${n}`;
-  const mo=document.getElementById('runsModal');mo.style.display='flex';
-  const tb=document.querySelector('#runsTable tbody');tb.innerHTML='<tr><td colspan=4 class="muted" style="text-align:center;padding:20px">Loading…</td></tr>';
-  try{const j=await jsonpWithRetry(ENDPOINT,{action:'runsForMap',map:n});const r=Array.isArray(j.rows)?j.rows:[];if(!r.length){tb.innerHTML='<tr><td colspan=4 class="muted" style="text-align:center;padding:20px">No runs found.</td></tr>';return;}
-    tb.innerHTML=r.map(x=>`<tr><td>${x[0]||''}</td><td>${formatTime(x[1])}</td><td>${x[2]||''}</td><td>${x[3]||''}</td></tr>`).join('');
-  }catch(e){tb.innerHTML=`<tr><td colspan=4 class="muted" style="text-align:center;padding:20px">Failed: ${e.message}</td></tr>`;}
+function setupHeaders(rebuild=false){
+  // init filters (skip thumb)
+  ['author','map','best','subs','id'].forEach(k=>{ if(!state.filters[k]) state.filters[k]={text:'',selected:new Set()}; });
+
+  $$('thead th').forEach(th=>{
+    const colKey=th.getAttribute('data-col'); if(!colKey || colKey==='thumb') return;
+    const fBtn=th.querySelector('.hdr-btn.filter'); const sBtn=th.querySelector('.hdr-btn.sort');
+    let menu=th.querySelector('.menu'); if(!menu){menu=document.createElement('div');menu.className='menu';th.appendChild(menu);}
+    if(rebuild || !menu.dataset.wired){ buildMenu(menu,colKey); menu.dataset.wired='1'; }
+    if(fBtn){ fBtn.onclick=(e)=>{ $$('.menu.open').forEach(m=>m.classList.remove('open')); menu.classList.toggle('open'); e.stopPropagation(); }; }
+    if(sBtn){ sBtn.onclick=(e)=>{ state.sort.col===colKey ? state.sort.dir=(state.sort.dir==='asc'?'desc':'asc') : state.sort={col:colKey,dir:'asc'}; state.page=1; render(); e.stopPropagation(); }; }
+  });
+  document.addEventListener('click',()=> $$('.menu.open').forEach(m=>m.classList.remove('open')));
+}
+function updateSortButtons(){
+  $$('.hdr-btn.sort').forEach(btn=>{
+    const th=btn.closest('th'); const col=th.getAttribute('data-col');
+    btn.classList.toggle('active', state.sort.col===col);
+    btn.textContent = state.sort.col===col ? (state.sort.dir==='asc'?'↑':'↓') : '⇅';
+  });
+}
+function buildMenu(menu,colKey){
+  menu.innerHTML='';
+  const row1=document.createElement('div'); row1.className='row';
+  const input=document.createElement('input'); input.type='text'; input.className='input'; input.placeholder='Search in column...'; input.value=state.filters[colKey].text;
+  const clear=document.createElement('button'); clear.className='btn'; clear.textContent='Clear';
+  row1.append(input,clear);
+
+  const scroll=document.createElement('div'); scroll.className='scroll';
+  const values=uniqueVals(state.data,colKey);
+  if(values.length===0){ scroll.innerHTML='<div class="item muted">No values found</div>'; }
+  else{
+    values.forEach(v=>{
+      const label=document.createElement('label'); label.className='item';
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=state.filters[colKey].selected.has(String(v));
+      const text=document.createElement('span'); text.textContent=(colKey==='best'?parseBest(v).label:(v||'(empty)'));
+      label.append(cb,text); scroll.appendChild(label);
+      cb.addEventListener('change',()=>{ const set=state.filters[colKey].selected; cb.checked?set.add(String(v)):set.delete(String(v)); });
+    });
+  }
+
+  const actions=document.createElement('div'); actions.className='actions';
+  const apply=document.createElement('button'); apply.className='btn'; apply.textContent='Apply';
+  const reset=document.createElement('button'); reset.className='btn'; reset.textContent='Reset';
+  actions.append(apply,reset); menu.append(row1,scroll,actions);
+
+  input.addEventListener('input',()=>{ state.filters[colKey].text=input.value; });
+  clear.addEventListener('click',()=>{ input.value=''; state.filters[colKey].text=''; });
+  apply.addEventListener('click',()=>{ state.page=1; render(); menu.classList.remove('open'); });
+  reset.addEventListener('click',()=>{ state.filters[colKey]={text:'',selected:new Set()}; buildMenu(menu,colKey); state.page=1; render(); });
+}
+
+/*** CONTROLS ***/
+$('#pageSize').addEventListener('change',()=>{ state.pageSize=+$('#pageSize').value||100; state.page=1; render(); });
+
+/*** MODAL ***/
+async function openRunsModal(enc){
+  const mapName=decodeURIComponent(enc);
+  $('#modalTitle').textContent=`Runs for: ${mapName}`;
+  const modal=$('#runsModal'); modal.style.display='flex';
+  const tbody=$('#runsTable tbody'); tbody.innerHTML='<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Loading…</td></tr>';
+  try{
+    const j=await getJSON({action:'runsForMap',map:mapName});
+    const rows=Array.isArray(j.rows)?j.rows:[];
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">No runs found.</td></tr>'; return;}
+    tbody.innerHTML=rows.map(r=>`<tr><td>${r[0]||''}</td><td>${formatTime(r[1])}</td><td>${r[2]||''}</td><td>${r[3]||''}</td></tr>`).join('');
+  }catch(e){tbody.innerHTML=`<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Failed: ${e.message}</td></tr>`;}
 }
 window.openRunsModal=openRunsModal;
-document.getElementById('closeModal').onclick=()=>document.getElementById('runsModal').style.display='none';
-document.getElementById('runsModal').onclick=e=>{if(e.target.id==='runsModal')e.currentTarget.style.display='none';};
-document.addEventListener('DOMContentLoaded',()=>fetchMaps());
+$('#closeModal').onclick=()=>$('#runsModal').style.display='none';
+$('#runsModal').onclick=e=>{ if(e.target.id==='runsModal') e.currentTarget.style.display='none'; };
+
+/*** BOOT ***/
+document.addEventListener('DOMContentLoaded',()=>{ $('#pageSize').value='100'; fetchMaps(); });
 </script>
 </body>
 </html>
