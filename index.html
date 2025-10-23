@@ -40,6 +40,7 @@
   a.link{color:var(--accent); text-decoration:none}
   a.link:hover{text-decoration:underline}
   .muted{color:var(--muted)}
+  .tip-inline{color:var(--muted); font-size:13px; white-space:nowrap}
 
   /* Grid matches maps page: frozen header inside scroll area with fixed max-height */
   .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:hidden}
@@ -90,7 +91,8 @@
     .container{padding:12px}
     .toolbar{gap:8px}
     thead th, tbody td{padding:10px}
-    table{min-width:unset} /* allow all columns to fit when fonts shrink */
+    table{min-width:unset}
+    .tip-inline{white-space:normal}
   }
 
   /* ====== COMPACT MODE (auto by JS on mobile), like maps ====== */
@@ -104,8 +106,7 @@
   body.compact .hdr-btn{width:20px; height:20px; font-size:10px; border-radius:6px}
   body.compact thead th{padding:8px; font-size:clamp(10px,2.7vw,13px); line-height:1.2}
   body.compact tbody td{padding:8px; font-size:clamp(10px,2.8vw,13px); line-height:1.25}
-  body.compact .grid-scroll{max-height:calc(40px + 10 * 40px)} /* head ~40, rows ~40 */
-  /* Clamp long text cells to two lines on mobile (one wrap), but not the subheader */
+  body.compact .grid-scroll{max-height:calc(40px + 10 * 40px)}
   .wrap{white-space:normal; word-break:break-word}
   body.compact .wrap{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
   body.compact .no-clamp{display:block !important; -webkit-line-clamp:unset !important; overflow:visible !important;}
@@ -145,7 +146,7 @@
 <div class="container">
   <div id="errorContainer" style="display:none"></div>
 
-  <!-- NEW: Table-level quick filters -->
+  <!-- Table-level quick filters -->
   <div class="toolbar" id="tableTools">
     <button class="btn" id="toggleVerifiedBtn">Verified runs only</button>
     <label class="muted">Difficulty level</label>
@@ -156,6 +157,7 @@
       <option value="hard">Hard</option>
       <option value="impossible">Impossible</option>
     </select>
+    <span class="tip-inline">You can also use the filter and sort buttons to find anything you want!</span>
   </div>
 
   <div class="grid">
@@ -200,9 +202,6 @@
     </div>
   </div>
 
-  <div class="muted" style="margin-top:8px">Tip: Click a column header's ⏷ for Excel-style search + multi-select. Use ⇅ to sort.</div>
-</div>
-
 <script>
 /*** CONFIG ***/
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFY96ZcEnkA7ilt9yaw2XKQZdf92bE-v-kpe8kTe5vG-tgIRB93ecQT5kMFrYc_-6Z2A/exec';
@@ -211,12 +210,11 @@ const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFY96ZcEnkA7ilt9yaw2X
 const state = {
   data: [],
   filters: {},
-  sort: { col: 'map', dir: 'desc', strategy: 'mapFreqThenTime' },
+  sort: { col: 'map', dir: 'desc', strategy: 'mapFreqThenTime' }, // default strategy
   pageSize: 10,
   page: 1,
   loading: false,
   mapCounts: {},
-  /* NEW quick filters */
   quickStatus: 'all',      // 'all' | 'verified'
   difficulty: 'all'        // 'all' | 'easy' | 'medium' | 'hard' | 'impossible'
 };
@@ -255,6 +253,7 @@ function normalizeStatus(s){ return String(s||'').trim().toLowerCase(); }
 function showError(message){ const c=$('#errorContainer'); c.innerHTML=`<div class="error">${message}</div>`; c.style.display='block'; }
 function hideError(){ $('#errorContainer').style.display='none'; }
 function computeMapCounts(rows){ const c={}; for(const r of rows){ const m=String(r.map??''); c[m]=(c[m]||0)+1; } state.mapCounts=c; }
+function isImpossibleMap(mapText){ return /\bimpossible\b/i.test(String(mapText||'')); }
 
 /*** MOBILE DETECTION (same as maps) ***/
 function isMobileLike(){
@@ -299,9 +298,9 @@ function applyFilters(rows){
       if(f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) return false;
       if(f.selected.size>0 && !f.selected.has(cell)) return false;
     }
-    /* NEW quick status filter */
+    /* quick status filter */
     if(state.quickStatus==='verified' && normalizeStatus(r.status)!=='verified') return false;
-    /* NEW difficulty filter on column C (map), match word anywhere (case-insensitive) */
+    /* difficulty filter on column C (map) contains selected word */
     if(state.difficulty!=='all'){
       const target = state.difficulty.toLowerCase();
       const mapText = String(r.map||'').toLowerCase();
@@ -310,20 +309,40 @@ function applyFilters(rows){
     return true;
   });
 }
+
 function sortRows(rows){
   const {col,dir,strategy}=state.sort; const m=dir==='asc'?1:-1;
-  if(strategy==='mapFreqThenTime'){
-    const c=state.mapCounts||{};
+
+  /* AUTO PRIORITY: all "Impossible" maps first by ascending time */
+  if (strategy === 'mapFreqThenTime') {
     return rows.slice().sort((a,b)=>{
-      const ma=String(a.map??''), mb=String(b.map??''); const ca=c[ma]||0, cb=c[mb]||0;
-      if(ca!==cb) return cb-ca;                              /* higher count first */
-      const ta=Number(a.timeMs)||Infinity, tb=Number(b.timeMs)||Infinity;
-      if(ta!==tb) return ta-tb;                              /* faster first */
-      const mapCmp=ma.localeCompare(mb,undefined,{numeric:true,sensitivity:'base'});
-      if(mapCmp!==0) return mapCmp;
-      return String(a.nickname||'').localeCompare(String(b.nickname||''),undefined,{numeric:true,sensitivity:'base'});
+      const impA = isImpossibleMap(a.map);
+      const impB = isImpossibleMap(b.map);
+      if (impA !== impB) return impA ? -1 : 1;                 // Impossible group first
+      if (impA && impB) {
+        const ta = Number(a.timeMs) || Infinity;
+        const tb = Number(b.timeMs) || Infinity;
+        if (ta !== tb) return ta - tb;                          // Asc time within Impossible
+        // tie-breakers within Impossible
+        const na = String(a.nickname||'');
+        const nb = String(b.nickname||'');
+        return na.localeCompare(nb, undefined, {numeric:true, sensitivity:'base'});
+      }
+      /* For the rest, keep the previous default "map frequency → time" ordering */
+      const counts = state.mapCounts || {};
+      const ma = String(a.map ?? ''), mb = String(b.map ?? '');
+      const ca = counts[ma] || 0,      cb = counts[mb] || 0;
+      if (ca !== cb) return cb - ca;                             // higher count first
+      const ta = Number(a.timeMs) || Infinity;
+      const tb = Number(b.timeMs) || Infinity;
+      if (ta !== tb) return ta - tb;                             // faster first
+      const mapCmp = ma.localeCompare(mb, undefined, {numeric:true, sensitivity:'base'});
+      if (mapCmp !== 0) return mapCmp;
+      return String(a.nickname||'').localeCompare(String(b.nickname||''), undefined, {numeric:true, sensitivity:'base'});
     });
   }
+
+  /* Manual sorts behave normally */
   return rows.slice().sort((a,b)=>{
     if(col==='timeMs') return ((Number(a.timeMs)||Infinity)-(Number(b.timeMs)||Infinity))*m;
     const an=Number(a[col]), bn=Number(b[col]);
@@ -331,6 +350,7 @@ function sortRows(rows){
     return String(a[col]??'').localeCompare(String(b[col]??''),undefined,{numeric:true,sensitivity:'base'})*m;
   });
 }
+
 function paginate(rows){
   const totalPages=Math.max(1,Math.ceil(rows.length/state.pageSize));
   state.page=clamp(state.page,1,totalPages);
@@ -461,19 +481,15 @@ $('#pageNum').addEventListener('change',()=>{ state.page=Math.max(1, Number($('#
 $('#pageNum').addEventListener('keypress',(e)=>{ if(e.key==='Enter'){ state.page=Math.max(1, Number($('#pageNum').value)||1); render(); } });
 $('#refreshBtn').addEventListener('click',()=>{ if(!state.loading) refresh(); });
 
-/* NEW: Quick filter controls */
-// Toggle Verified-only for column D
+/* Quick filter controls */
 $('#toggleVerifiedBtn').addEventListener('click', ()=>{
   if(state.quickStatus==='all'){
     state.quickStatus='verified';
-    // Clear header-menu Status filters (D only), but keep others
     state.filters.status = { text:'', selected:new Set() };
-    // Rebuild just to reflect cleared state in the UI
     setupHeaders(true);
     $('#toggleVerifiedBtn').textContent='All runs';
   }else{
     state.quickStatus='all';
-    // Clear only D again (per spec: remove all filters in D only)
     state.filters.status = { text:'', selected:new Set() };
     setupHeaders(true);
     $('#toggleVerifiedBtn').textContent='Verified runs only';
@@ -482,14 +498,11 @@ $('#toggleVerifiedBtn').addEventListener('click', ()=>{
   render();
 });
 
-// Difficulty dropdown on column C map text (contains match)
 $('#difficultySelect').addEventListener('change', ()=>{
-  state.difficulty = $('#difficultySelect').value; // all/easy/medium/hard/impossible
+  state.difficulty = $('#difficultySelect').value;
   state.page=1;
   render();
 });
-
-/*** ONLINE REMOVED ***/
 
 /*** BOOT ***/
 async function refresh(){ const ok=await loadData(); if(ok){ setupHeaders(true); render(); } }
