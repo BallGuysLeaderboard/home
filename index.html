@@ -10,10 +10,20 @@
 <style>
   :root{
     --bg:#0f1220; --panel:#161a2b; --accent:#7bdcff; --muted:#9aa4bf; --text:#e9efff; --border:rgba(255,255,255,.08);
+    --row-h:52px;   /* approx data row height */
+    --head-h:48px;  /* table head height inside grid */
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.4;}
-  header{position:sticky; top:0; z-index:2; background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70)); backdrop-filter:blur(6px); border-bottom:1px solid var(--border)}
+
+  /* Header matches maps page: static so grid header never scrolls behind it */
+  header{
+    position:static;
+    background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70));
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border)
+  }
+
   .container{max-width:1200px; margin:0 auto; padding:16px}
   h1{margin:0; font-size:clamp(22px,3vw,32px)}
   .sub-lg{font-size:clamp(16px,2.2vw,20px); margin-top:6px}
@@ -24,22 +34,40 @@
   .btn:disabled{opacity:0.5; cursor:not-allowed;}
   .btn.accent{background:linear-gradient(180deg,rgba(123,220,255,.18),rgba(123,220,255,.08)); border-color:rgba(123,220,255,.35)}
   .select,.input{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; font-size:14px;}
-  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:visible}
-  .grid-scroll{width:100%; overflow:auto; border-radius:16px}
-  table{width:100%; border-collapse:collapse}
-  thead th{position:relative; text-align:left; padding:12px; font-size:14px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,rgba(22,26,43,.5),rgba(22,26,43,0))}
-  tbody td{padding:12px; border-bottom:1px solid var(--border); vertical-align:top}
-  tbody tr:hover{background:rgba(255,255,255,.02)}
-  .muted{color:var(--muted)}
   .right{margin-left:auto}
   .pagination{display:flex; align-items:center; gap:8px}
   .page-input{width:56px; text-align:center}
   a.link{color:var(--accent); text-decoration:none}
   a.link:hover{text-decoration:underline}
+  .muted{color:var(--muted)}
+
+  /* Grid matches maps page: frozen header inside scroll area with fixed max-height */
+  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:hidden}
+  .grid-scroll{
+    width:100%; overflow:auto; border-radius:16px;
+    max-height:calc(var(--head-h) + 10 * var(--row-h)); /* cap to 10 rows + header like maps */
+    position:relative;
+  }
+  table{width:100%; border-collapse:collapse}
+  thead th{
+    position:sticky; top:0; z-index:2; text-align:left; padding:12px; font-size:14px;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,rgba(22,26,43,.9),rgba(22,26,43,.6));
+    backdrop-filter:blur(4px);
+  }
+  tbody td{padding:12px; border-bottom:1px solid var(--border); vertical-align:top; height:var(--row-h)}
+  tbody tr:hover{background:rgba(255,255,255,.02)}
+  .loading{text-align:center; padding:40px; color:var(--muted)}
+  .error{background:rgba(255,123,123,.1); border:1px solid rgba(255,123,123,.3); color:#ffc7c7; padding:12px; border-radius:8px; margin:16px 0;}
+
   .status{padding:4px 8px; border-radius:8px; font-size:12px; border:1px solid var(--border); display:inline-block;}
-  .status.approved{background:rgba(123,255,183,.08); border-color:rgba(123,255,183,.25); color:#b7ffd2}
+  /* Precise status colors per request */
   .status.pending{background:rgba(255,214,107,.08); border-color:rgba(255,214,107,.25); color:#ffe2a6}
-  .status.rejected{background:rgba(255,123,123,.08); border-color:rgba(255,123,123,.25); color:#ffc7c7}
+  .status.ineligible{background:rgba(180,190,200,.10); border-color:rgba(180,190,200,.28); color:#cbd5e1}
+  .status.verified{background:rgba(123,255,183,.08); border-color:rgba(123,255,183,.25); color:#b7ffd2}
+  .status.notverified{background:rgba(255,123,123,.08); border-color:rgba(255,123,123,.25); color:#ffc7c7}
+
+  .pill{font-size:12px; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:rgba(255,255,255,.04); display:inline-block;}
   .hdr-tools{display:inline-flex; gap:6px; margin-left:6px}
   .hdr-btn{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:1px solid var(--border); background:var(--panel); border-radius:6px; cursor:pointer; font-size:12px}
   .hdr-btn.sort.active{border-color:rgba(255,214,107,.35); background:rgba(255,214,107,.1)}
@@ -56,31 +84,34 @@
   .menu .item{display:flex; align-items:center; gap:8px; padding:6px 4px; cursor:pointer;}
   .menu .item:hover{background:rgba(255,255,255,.05)}
   .menu .actions{display:flex; gap:8px; margin-top:8px}
-  .pill{font-size:12px; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:rgba(255,255,255,.04); display:inline-block;}
-  .loading{text-align:center; padding:40px; color:var(--muted)}
-  .error{background:rgba(255,123,123,.1); border:1px solid rgba(255,123,123,.3); color:#ffc7c7; padding:12px; border-radius:8px; margin:16px 0;}
 
-  /* Online users badge */
-  .online-indicator{
-    position:fixed; top:8px; right:8px; z-index:10000;
-    padding:6px 10px; border-radius:999px; font-size:12px;
-    background:rgba(123,220,255,.14); border:1px solid rgba(123,220,255,.35); color:#dff6ff;
-    backdrop-filter:blur(6px)
-  }
-
-  /* Mobile tweaks */
+  /* Mobile tweaks — align with maps page */
   @media (max-width: 720px){
     .container{padding:12px}
     .toolbar{gap:8px}
     thead th, tbody td{padding:10px}
-    .grid-scroll{overflow-x:auto}
-    table{min-width: 760px;}
+    table{min-width:unset} /* allow all columns to fit when fonts shrink */
   }
+
+  /* ====== COMPACT MODE (auto by JS on mobile), like maps ====== */
+  body.compact{
+    font-size:clamp(10px, 2.9vw, 14px);
+  }
+  body.compact h1{font-size:clamp(16px,4.6vw,20px)}
+  body.compact .sub-lg{font-size:clamp(12px,3.8vw,15px)}
+  body.compact .sub-sm{font-size:clamp(11px,3.5vw,13px)}
+  body.compact .btn, body.compact .select, body.compact .input{padding:6px 8px; font-size:clamp(11px,3.2vw,13px); border-radius:8px}
+  body.compact .hdr-btn{width:20px; height:20px; font-size:10px; border-radius:6px}
+  body.compact thead th{padding:8px; font-size:clamp(10px,2.7vw,13px); line-height:1.2}
+  body.compact tbody td{padding:8px; font-size:clamp(10px,2.8vw,13px); line-height:1.25}
+  body.compact .grid-scroll{max-height:calc(40px + 10 * 40px)} /* head ~40, rows ~40 */
+  /* Clamp long text cells to two lines on mobile (one wrap), but not the subheader */
+  .wrap{white-space:normal; word-break:break-word}
+  body.compact .wrap{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  body.compact .no-clamp{display:block !important; -webkit-line-clamp:unset !important; overflow:visible !important;}
 </style>
 </head>
 <body>
-
-<div id="onlineIndicator" class="online-indicator">Online: —</div>
 
 <header>
   <div class="container">
@@ -88,12 +119,11 @@
     <div class="sub-lg">
       Submit your runs through <a class="link" href="/home/submissions">this form</a>
     </div>
-    <div class="sub-sm">
+    <div class="sub-sm no-clamp">
       Please read the <a class="link" href="/home/rules">instructions &amp; rules</a> before running a level in order to have a verified speedrun! All runs are manually reviewed.
     </div>
 
     <div class="toolbar">
-      <!-- NEW: View All Maps button -->
       <a class="btn accent" href="/home/maps" id="viewAllMapsBtn">View All Maps!</a>
 
       <label class="muted">Rows per page</label>
@@ -114,6 +144,19 @@
 
 <div class="container">
   <div id="errorContainer" style="display:none"></div>
+
+  <!-- NEW: Table-level quick filters -->
+  <div class="toolbar" id="tableTools">
+    <button class="btn" id="toggleVerifiedBtn">Verified runs only</button>
+    <label class="muted">Difficulty level</label>
+    <select id="difficultySelect" class="select">
+      <option value="all" selected>All</option>
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+      <option value="impossible">Impossible</option>
+    </select>
+  </div>
 
   <div class="grid">
     <div class="grid-scroll">
@@ -151,9 +194,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td colspan="7" class="loading">Loading data...</td>
-          </tr>
+          <tr><td colspan="7" class="loading">Loading data...</td></tr>
         </tbody>
       </table>
     </div>
@@ -170,12 +211,14 @@ const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFY96ZcEnkA7ilt9yaw2X
 const state = {
   data: [],
   filters: {},
-  // NEW: default to map-frequency-then-time sort
   sort: { col: 'map', dir: 'desc', strategy: 'mapFreqThenTime' },
   pageSize: 10,
   page: 1,
   loading: false,
-  mapCounts: {} // cache for map frequencies
+  mapCounts: {},
+  /* NEW quick filters */
+  quickStatus: 'all',      // 'all' | 'verified'
+  difficulty: 'all'        // 'all' | 'easy' | 'medium' | 'hard' | 'impossible'
 };
 
 const COLS = [
@@ -188,471 +231,269 @@ const COLS = [
   { key: 'userId',  label: 'Discord Username' },
 ];
 
-// Initialize filters
-COLS.forEach(c => {
-  state.filters[c.key] = { text: '', selected: new Set() };
-});
+COLS.forEach(c => state.filters[c.key] = { text: '', selected: new Set() });
 
 /*** HELPERS ***/
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
-
-function clamp(n, min, max) { 
-  return Math.max(min, Math.min(max, n)); 
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+function uniqueVals(rows, col){ return [...new Set(rows.map(r => String(r[col] ?? '')))].sort(); }
+function escapeAttr(s){ return String(s ?? '').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
+function formatTime(ms){
+  const t = Math.floor((Number(ms)||0)/1000), h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=t%60, hth=Math.floor(((Number(ms)||0)%1000)/10);
+  return h>0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(hth).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}.${String(hth).padStart(2,'0')}`;
 }
-
-function uniqueVals(rows, col) { 
-  return [...new Set(rows.map(r => String(r[col] ?? '')))].sort(); 
+function statusClass(s){
+  const v = String(s||'').trim().toLowerCase();
+  if (v === 'pending') return 'pending';
+  if (v === 'ineligible') return 'ineligible';
+  if (v === 'verified') return 'verified';
+  if (v === 'not verified') return 'notverified';
+  return 'pending';
 }
+function normalizeStatus(s){ return String(s||'').trim().toLowerCase(); }
+function showError(message){ const c=$('#errorContainer'); c.innerHTML=`<div class="error">${message}</div>`; c.style.display='block'; }
+function hideError(){ $('#errorContainer').style.display='none'; }
+function computeMapCounts(rows){ const c={}; for(const r of rows){ const m=String(r.map??''); c[m]=(c[m]||0)+1; } state.mapCounts=c; }
 
-function escapeAttr(s) { 
-  return String(s ?? '').replace(/"/g, '&quot;').replace(/'/g, '&#x27;'); 
+/*** MOBILE DETECTION (same as maps) ***/
+function isMobileLike(){
+  const w=Math.min(window.innerWidth||0, screen.width||0);
+  const coarse=window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+  const ua=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  return (w<=860 && coarse) || (w<=640) || ua;
 }
-
-function formatTime(ms) {
-  const totalSeconds = Math.floor((Number(ms) || 0) / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const hundredths = Math.floor(((Number(ms) || 0) % 1000) / 10);
-  
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${hundredths.toString().padStart(2, '0')}`;
-  }
-  return `${minutes}:${seconds.toString().padStart(2, '0')}.${hundredths.toString().padStart(2, '0')}`;
-}
-
-function statusClass(s) { 
-  const t = (s || '').toLowerCase(); 
-  if (t.includes('approve')) return 'approved'; 
-  if (t.includes('reject')) return 'rejected'; 
-  return 'pending'; 
-}
-
-function showError(message) {
-  const container = $('#errorContainer');
-  container.innerHTML = `<div class="error">${message}</div>`;
-  container.style.display = 'block';
-}
-
-function hideError() {
-  $('#errorContainer').style.display = 'none';
-}
-
-function computeMapCounts(rows){
-  const counts = {};
-  for (const r of rows) {
-    const m = String(r.map ?? '');
-    counts[m] = (counts[m] || 0) + 1;
-  }
-  state.mapCounts = counts;
-}
+function applyCompactIfNeeded(){ document.body.classList.toggle('compact', isMobileLike()); }
+applyCompactIfNeeded();
+window.addEventListener('resize', applyCompactIfNeeded);
+window.addEventListener('orientationchange', applyCompactIfNeeded);
 
 /*** DATA IO ***/
-async function loadData() {
-  if (state.loading) return;
-  state.loading = true;
-  
-  try {
+async function loadData(){
+  if(state.loading) return; state.loading=true;
+  try{
     hideError();
-    const tbody = $('#grid tbody');
-    tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading data...</td></tr>';
-    
-    // Add cache busting and timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const r = await fetch(`${ENDPOINT}?action=data&_=${Date.now()}`, { 
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!r.ok) {
-      throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-    }
-    
-    const j = await r.json();
-    
-    if (j.error) {
-      throw new Error(j.error);
-    }
-    
-    if (!Array.isArray(j.rows)) {
-      throw new Error('Invalid data format received from server');
-    }
-    
-    state.data = j.rows;
-    computeMapCounts(state.data); // NEW: precompute once on load
+    $('#grid tbody').innerHTML='<tr><td colspan="7" class="loading">Loading data...</td></tr>';
+    const ctlr=new AbortController(); const t=setTimeout(()=>ctlr.abort(),10000);
+    const r=await fetch(`${ENDPOINT}?action=data&_=${Date.now()}`,{signal:ctlr.signal});
+    clearTimeout(t);
+    if(!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+    const j=await r.json();
+    if(j.error) throw new Error(j.error);
+    if(!Array.isArray(j.rows)) throw new Error('Invalid data format received from server');
+    state.data=j.rows;
+    computeMapCounts(state.data);
     return true;
-    
-  } catch (e) {
-    console.error('Load data error:', e);
-    let errorMessage = 'Could not load data: ';
-    
-    if (e.name === 'AbortError') {
-      errorMessage += 'Request timed out. Check your internet connection.';
-    } else if (e.message.includes('Failed to fetch')) {
-      errorMessage += 'Network error. Check if the endpoint URL is correct and accessible.';
-    } else {
-      errorMessage += e.message;
-    }
-    
-    showError(errorMessage);
+  }catch(e){
+    showError(e.name==='AbortError'?'Could not load data: Request timed out.':`Could not load data: ${e.message}`);
     return false;
-  } finally {
-    state.loading = false;
-  }
-}
-
-// NEW: online users fetcher
-async function loadOnline(){
-  const badge = $('#onlineIndicator');
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(()=>controller.abort(), 6000);
-    const r = await fetch(`${ENDPOINT}?action=online&_=${Date.now()}`, {signal: controller.signal});
-    clearTimeout(timeoutId);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const j = await r.json();
-    const n = Number(j.online);
-    badge.textContent = Number.isFinite(n) ? `Online: ${n}` : 'Online: —';
-  } catch(e){
-    badge.textContent = 'Online: —';
-  }
-}
-
-async function refresh() {
-  const success = await loadData();
-  if (success) {
-    setupHeaders(true);
-    render();
-  }
+  }finally{ state.loading=false; }
 }
 
 /*** FILTER + SORT + PAGE ***/
-function applyFilters(rows) {
-  return rows.filter(r => {
-    for (const [col, f] of Object.entries(state.filters)) {
-      const cell = String(r[col] ?? '');
-      if (f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) return false;
-      if (f.selected.size > 0 && !f.selected.has(cell)) return false;
+function applyFilters(rows){
+  return rows.filter(r=>{
+    /* header-menu filters */
+    for(const [col,f] of Object.entries(state.filters)){
+      const cell=String(r[col]??'');
+      if(f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) return false;
+      if(f.selected.size>0 && !f.selected.has(cell)) return false;
+    }
+    /* NEW quick status filter */
+    if(state.quickStatus==='verified' && normalizeStatus(r.status)!=='verified') return false;
+    /* NEW difficulty filter on column C (map), match word anywhere (case-insensitive) */
+    if(state.difficulty!=='all'){
+      const target = state.difficulty.toLowerCase();
+      const mapText = String(r.map||'').toLowerCase();
+      if(!mapText.includes(target)) return false;
     }
     return true;
   });
 }
-
-function sortRows(rows) {
-  const { col, dir, strategy } = state.sort;
-  const m = dir === 'asc' ? 1 : -1;
-
-  // NEW: map frequency precedence, then fastest time
-  if (strategy === 'mapFreqThenTime') {
-    const counts = state.mapCounts || {};
+function sortRows(rows){
+  const {col,dir,strategy}=state.sort; const m=dir==='asc'?1:-1;
+  if(strategy==='mapFreqThenTime'){
+    const c=state.mapCounts||{};
     return rows.slice().sort((a,b)=>{
-      const ma = String(a.map ?? ''), mb = String(b.map ?? '');
-      const ca = counts[ma] || 0, cb = counts[mb] || 0;
-
-      // Primary: higher count first
-      if (ca !== cb) return (cb - ca); // always highest first regardless of dir
-
-      // Secondary: faster (lower) time first
-      const ta = Number(a.timeMs) || Number.POSITIVE_INFINITY;
-      const tb = Number(b.timeMs) || Number.POSITIVE_INFINITY;
-      if (ta !== tb) return ta - tb;
-
-      // Tertiary: stable alpha by map then nickname
-      const mapCmp = ma.localeCompare(mb, undefined, {numeric:true, sensitivity:'base'});
-      if (mapCmp !== 0) return mapCmp;
-      return String(a.nickname||'').localeCompare(String(b.nickname||''), undefined, {numeric:true, sensitivity:'base'});
+      const ma=String(a.map??''), mb=String(b.map??''); const ca=c[ma]||0, cb=c[mb]||0;
+      if(ca!==cb) return cb-ca;                              /* higher count first */
+      const ta=Number(a.timeMs)||Infinity, tb=Number(b.timeMs)||Infinity;
+      if(ta!==tb) return ta-tb;                              /* faster first */
+      const mapCmp=ma.localeCompare(mb,undefined,{numeric:true,sensitivity:'base'});
+      if(mapCmp!==0) return mapCmp;
+      return String(a.nickname||'').localeCompare(String(b.nickname||''),undefined,{numeric:true,sensitivity:'base'});
     });
   }
-
-  // Fallback: original behavior
-  return rows.slice().sort((a, b) => {
-    const av = a[col], bv = b[col];
-    if (col === 'timeMs') return (Number(av) - Number(bv)) * m;
-    const an = Number(av), bn = Number(bv);
-    if (!isNaN(an) && !isNaN(bn)) return (an - bn) * m;
-    return String(av).localeCompare(String(bv), undefined, { numeric:true, sensitivity:'base' }) * m;
+  return rows.slice().sort((a,b)=>{
+    if(col==='timeMs') return ((Number(a.timeMs)||Infinity)-(Number(b.timeMs)||Infinity))*m;
+    const an=Number(a[col]), bn=Number(b[col]);
+    if(!Number.isNaN(an) && !Number.isNaN(bn)) return (an-bn)*m;
+    return String(a[col]??'').localeCompare(String(b[col]??''),undefined,{numeric:true,sensitivity:'base'})*m;
   });
 }
-
-function paginate(rows) {
-  const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
-  state.page = clamp(state.page, 1, totalPages);
-  const start = (state.page - 1) * state.pageSize;
-  const end = start + state.pageSize;
-  return { 
-    pageRows: rows.slice(start, end), 
-    totalPages,
-    totalRows: rows.length 
-  };
+function paginate(rows){
+  const totalPages=Math.max(1,Math.ceil(rows.length/state.pageSize));
+  state.page=clamp(state.page,1,totalPages);
+  const start=(state.page-1)*state.pageSize;
+  return {pageRows:rows.slice(start,start+state.pageSize), totalPages, totalRows:rows.length};
 }
 
 /*** RENDER ***/
-function render() {
-  const tbody = $('#grid tbody');
-  
-  if (state.data.length === 0) {
-    tbody.innerHTML = Array.from({length: state.pageSize}).map(() => `
-      <tr>${'<td class="muted">&nbsp;</td>'.repeat(7)}</tr>
-    `).join('');
+function render(){
+  const tbody=$('#grid tbody');
+  if(state.data.length===0){
+    tbody.innerHTML=Array.from({length:state.pageSize}).map(()=>`<tr>${'<td class="muted">&nbsp;</td>'.repeat(7)}</tr>`).join('');
     return;
   }
-  
-  const filtered = applyFilters(state.data);
-  // NOTE: counts are based on whole dataset per spec; if you prefer filtered, uncomment next line:
-  // computeMapCounts(filtered);
-  const sorted = sortRows(filtered);
-  const { pageRows, totalPages } = paginate(sorted);
-  
+  const filtered=applyFilters(state.data);
+  const sorted=sortRows(filtered);
+  const {pageRows,totalPages}=paginate(sorted);
   updateSortButtons();
 
-  function normalizeUrl(url) {
-    if (!url) return '';
-    url = String(url).trim();
-    if (/^https?:\/\//i.test(url)) return url;
-    if (url.startsWith('//')) return 'https:' + url;
-    return 'https://' + url.replace(/^\/+/, '');
+  function normalizeUrl(url){
+    if(!url) return '';
+    url=String(url).trim();
+    if(/^https?:\/\//i.test(url)) return url;
+    if(url.startsWith('//')) return 'https:'+url;
+    return 'https://'+url.replace(/^\/+/, '');
   }
 
-  let rowsHtml = pageRows.map(r => `
+  let rowsHtml=pageRows.map(r=>`
     <tr>
-      <td>${escapeAttr(r.nickname)}</td>
-      <td><span class="pill">${formatTime(Number(r.timeMs) || 0)}</span></td>
-      <td>${escapeAttr(r.map)}</td>
-      <td><span class="status ${statusClass(r.status)}">${escapeAttr(r.status || 'Pending')}</span></td>
-      <td>${r.video ? `<a class="link" href="${normalizeUrl(r.video)}" target="_blank" rel="noopener">Link to Video</a>` : ''}</td>
-      <td>${r.image ? `<a class="link" href="${normalizeUrl(r.image)}" target="_blank" rel="noopener">Link to Image</a>` : ''}</td>
-      <td>${escapeAttr(r.userId)}</td>
+      <td class="wrap">${escapeAttr(r.nickname)}</td>
+      <td><span class="pill">${formatTime(Number(r.timeMs)||0)}</span></td>
+      <td class="wrap">${escapeAttr(r.map)}</td>
+      <td><span class="status ${statusClass(r.status)}">${escapeAttr(r.status||'Pending')}</span></td>
+      <td>${r.video?`<a class="link" href="${normalizeUrl(r.video)}" target="_blank" rel="noopener">Link to Video</a>`:''}</td>
+      <td>${r.image?`<a class="link" href="${normalizeUrl(r.image)}" target="_blank" rel="noopener">Link to Image</a>`:''}</td>
+      <td class="wrap">${escapeAttr(r.userId)}</td>
     </tr>
   `).join('');
 
-  const needed = Math.max(0, state.pageSize - pageRows.length);
-  if (needed > 0) {
-    rowsHtml += Array.from({length: needed}).map(() =>
-      `<tr>${'<td class="muted">&nbsp;</td>'.repeat(7)}</tr>`
-    ).join('');
-  }
+  const needed=Math.max(0,state.pageSize-pageRows.length);
+  if(needed>0) rowsHtml+=Array.from({length:needed}).map(()=>`<tr>${'<td class="muted">&nbsp;</td>'.repeat(7)}</tr>`).join('');
+  tbody.innerHTML=rowsHtml;
 
-  tbody.innerHTML = rowsHtml;
-  
-  $('#pageTotal').textContent = `/ ${totalPages}`;
-  $('#pageNum').value = state.page;
-  $('#prev').disabled = state.page <= 1;
-  $('#next').disabled = state.page >= totalPages;
-  
-  const info = $('#rowInfo') || (() => {
-    const div = document.createElement('div');
-    div.className = 'muted';
-    div.style.marginTop = '12px';
-    div.id = 'rowInfo';
-    document.querySelector('.container').appendChild(div);
-    return div;
-  })();
-  
-  const filteredRows = applyFilters(state.data);
-  info.textContent = `Showing ${pageRows.length} of ${filteredRows.length} rows (${state.data.length} total)`;
+  $('#pageTotal').textContent=`/ ${totalPages}`;
+  $('#pageNum').value=state.page;
+
+  $('#prev').disabled=state.page<=1;
+  $('#next').disabled=state.page>=totalPages;
+
+  const info = document.getElementById('rowInfo') || (()=>{ const d=document.createElement('div'); d.className='muted'; d.style.marginTop='12px'; d.id='rowInfo'; document.querySelector('.container').appendChild(d); return d; })();
+  info.textContent=`Showing ${pageRows.length} of ${filtered.length} rows (${state.data.length} total)`;
 }
-
-function updateSortButtons() {
-  $$('.hdr-btn.sort').forEach(btn => {
+function updateSortButtons(){
+  $$('.hdr-btn.sort').forEach(btn=>{
     btn.classList.remove('active');
-    const th = btn.closest('th');
-    const colKey = th.getAttribute('data-col');
-    if (state.sort.col === colKey) {
+    const th=btn.closest('th'); const col=th.getAttribute('data-col');
+    if(state.sort.col===col){
       btn.classList.add('active');
-      // When using mapFreqThenTime, we show a dedicated icon
-      btn.textContent = (state.sort.strategy === 'mapFreqThenTime' && colKey === 'map') ? '★' : (state.sort.dir === 'asc' ? '↑' : '↓');
-    } else {
-      btn.textContent = '⇅';
-    }
+      btn.textContent=(state.sort.strategy==='mapFreqThenTime' && col==='map')?'★':(state.sort.dir==='asc'?'↑':'↓');
+    }else btn.textContent='⇅';
   });
 }
 
 /*** HEADER MENUS ***/
-function setupHeaders(rebuild = false) {
-  $$('thead th').forEach(th => {
-    const colKey = th.getAttribute('data-col');
-    const menu = th.querySelector('.menu');
-    const fBtn = th.querySelector('.hdr-btn.filter');
-    const sBtn = th.querySelector('.hdr-btn.sort');
-    
-    if (rebuild || !menu.dataset.wired) {
-      buildMenu(menu, colKey);
-      menu.dataset.wired = '1';
-    }
-    
-    menu.addEventListener('click', e => e.stopPropagation());
-    menu.addEventListener('mousedown', e => e.stopPropagation());
-    menu.addEventListener('touchstart', e => e.stopPropagation(), {passive:true});
+function setupHeaders(rebuild=false){
+  $$('thead th').forEach(th=>{
+    const colKey=th.getAttribute('data-col');
+    const menu=th.querySelector('.menu');
+    const fBtn=th.querySelector('.hdr-btn.filter');
+    const sBtn=th.querySelector('.hdr-btn.sort');
 
-    fBtn.onclick = null; sBtn.onclick = null;
-    
-    fBtn.onclick = (e) => {
-      $$('.menu.open').forEach(m => m.classList.remove('open'));
-      menu.classList.toggle('open');
-      e.stopPropagation();
-    };
-    
-    sBtn.onclick = (e) => {
-      if (colKey === 'map') {
-        // Toggle between special strategy and plain alpha sort
-        if (state.sort.strategy === 'mapFreqThenTime') {
-          state.sort = { col: 'map', dir: 'asc', strategy: null };
-        } else {
-          state.sort = { col: 'map', dir: 'desc', strategy: 'mapFreqThenTime' };
-        }
-      } else {
-        state.sort.strategy = null;
-        if (state.sort.col === colKey) {
-          state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
-        } else {
-          state.sort = { col: colKey, dir: 'asc', strategy: null };
-        }
+    if(rebuild || !menu.dataset.wired){ buildMenu(menu,colKey); menu.dataset.wired='1'; }
+    menu.addEventListener('click',e=>e.stopPropagation());
+    menu.addEventListener('mousedown',e=>e.stopPropagation());
+    menu.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
+
+    fBtn.onclick=(e)=>{ $$('.menu.open').forEach(m=>m.classList.remove('open')); menu.classList.toggle('open'); e.stopPropagation(); };
+    sBtn.onclick=(e)=>{
+      if(colKey==='map'){
+        if(state.sort.strategy==='mapFreqThenTime'){ state.sort={col:'map',dir:'asc',strategy:null}; }
+        else{ state.sort={col:'map',dir:'desc',strategy:'mapFreqThenTime'}; }
+      }else{
+        state.sort.strategy=null;
+        if(state.sort.col===colKey) state.sort.dir=(state.sort.dir==='asc'?'desc':'asc');
+        else state.sort={col:colKey,dir:'asc',strategy:null};
       }
-      state.page = 1;
-      render();
-      e.stopPropagation();
+      state.page=1; render(); e.stopPropagation();
     };
   });
-  
-  document.addEventListener('click', () => {
-    $$('.menu.open').forEach(m => m.classList.remove('open'));
-  });
+  document.addEventListener('click',()=> $$('.menu.open').forEach(m=>m.classList.remove('open')));
 }
+function buildMenu(menu,colKey){
+  menu.innerHTML='';
+  const row1=document.createElement('div'); row1.className='row';
+  const input=document.createElement('input'); input.type='text'; input.className='input'; input.placeholder='Search in column...'; input.value=state.filters[colKey].text;
+  const clear=document.createElement('button'); clear.className='btn'; clear.textContent='Clear';
+  row1.append(input,clear);
 
-function buildMenu(menu, colKey) {
-  menu.innerHTML = '';
-  
-  const row1 = document.createElement('div');
-  row1.className = 'row';
-  
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'input';
-  input.placeholder = 'Search in column...';
-  input.value = state.filters[colKey].text;
-  
-  const clear = document.createElement('button');
-  clear.className = 'btn';
-  clear.textContent = 'Clear';
-  
-  row1.append(input, clear);
-  
-  const scroll = document.createElement('div');
-  scroll.className = 'scroll';
-  
-  const uniqueValues = uniqueVals(state.data, colKey);
-  if (uniqueValues.length === 0) {
-    scroll.innerHTML = '<div class="item muted">No values found</div>';
-  } else {
-    uniqueValues.forEach(v => {
-      const label = document.createElement('label');
-      label.className = 'item';
-      
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.checked = state.filters[colKey].selected.has(String(v));
-      
-      const text = document.createElement('span');
-      if (colKey === 'timeMs') text.textContent = formatTime(Number(v) || 0);
-      else text.textContent = v || '(empty)';
-      
-      label.append(cb, text);
-      scroll.appendChild(label);
-      
-      cb.addEventListener('change', () => {
-        const set = state.filters[colKey].selected;
-        if (cb.checked) set.add(String(v)); else set.delete(String(v));
-      });
+  const scroll=document.createElement('div'); scroll.className='scroll';
+  const values=uniqueVals(state.data,colKey);
+  if(values.length===0){ scroll.innerHTML='<div class="item muted">No values found</div>'; }
+  else{
+    values.forEach(v=>{
+      const label=document.createElement('label'); label.className='item';
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=state.filters[colKey].selected.has(String(v));
+      const text=document.createElement('span'); text.textContent=(colKey==='timeMs')?formatTime(Number(v)||0):(v||'(empty)');
+      label.append(cb,text); scroll.appendChild(label);
+      cb.addEventListener('change',()=>{ const set=state.filters[colKey].selected; cb.checked?set.add(String(v)):set.delete(String(v)); });
     });
   }
-  
-  const actions = document.createElement('div');
-  actions.className = 'actions';
-  
-  const apply = document.createElement('button');
-  apply.className = 'btn';
-  apply.textContent = 'Apply';
-  
-  const reset = document.createElement('button');
-  reset.className = 'btn';
-  reset.textContent = 'Reset';
-  
-  actions.append(apply, reset);
-  menu.append(row1, scroll, actions);
-  
-  input.addEventListener('input', () => {
-    state.filters[colKey].text = input.value;
-  });
-  
-  clear.addEventListener('click', () => {
-    input.value = '';
-    state.filters[colKey].text = '';
-  });
-  
-  apply.addEventListener('click', () => {
-    state.page = 1;
-    render();
-    menu.classList.remove('open');
-  });
-  
-  reset.addEventListener('click', () => {
-    state.filters[colKey] = { text: '', selected: new Set() };
-    buildMenu(menu, colKey);
-    state.page = 1;
-    render();
-  });
+
+  const actions=document.createElement('div'); actions.className='actions';
+  const apply=document.createElement('button'); apply.className='btn'; apply.textContent='Apply';
+  const reset=document.createElement('button'); reset.className='btn'; reset.textContent='Reset';
+  actions.append(apply,reset); menu.append(row1,scroll,actions);
+
+  input.addEventListener('input',()=>{ state.filters[colKey].text=input.value; });
+  clear.addEventListener('click',()=>{ input.value=''; state.filters[colKey].text=''; });
+  apply.addEventListener('click',()=>{ state.page=1; render(); menu.classList.remove('open'); });
+  reset.addEventListener('click',()=>{ state.filters[colKey]={text:'',selected:new Set()}; buildMenu(menu,colKey); state.page=1; render(); });
 }
 
 /*** CONTROLS ***/
-$('#pageSize').addEventListener('change', () => {
-  state.pageSize = Number($('#pageSize').value);
-  state.page = 1;
-  render();
-});
+$('#pageSize').addEventListener('change',()=>{ state.pageSize=Number($('#pageSize').value); state.page=1; render(); });
+$('#prev').addEventListener('click',()=>{ state.page--; render(); });
+$('#next').addEventListener('click',()=>{ state.page++; render(); });
+$('#pageNum').addEventListener('change',()=>{ state.page=Math.max(1, Number($('#pageNum').value)||1); render(); });
+$('#pageNum').addEventListener('keypress',(e)=>{ if(e.key==='Enter'){ state.page=Math.max(1, Number($('#pageNum').value)||1); render(); } });
+$('#refreshBtn').addEventListener('click',()=>{ if(!state.loading) refresh(); });
 
-$('#prev').addEventListener('click', () => {
-  state.page--;
-  render();
-});
-
-$('#next').addEventListener('click', () => {
-  state.page++;
-  render();
-});
-
-$('#pageNum').addEventListener('change', () => {
-  state.page = Math.max(1, Number($('#pageNum').value) || 1);
-  render();
-});
-
-$('#refreshBtn').addEventListener('click', () => {
-  if (!state.loading) {
-    refresh();
+/* NEW: Quick filter controls */
+// Toggle Verified-only for column D
+$('#toggleVerifiedBtn').addEventListener('click', ()=>{
+  if(state.quickStatus==='all'){
+    state.quickStatus='verified';
+    // Clear header-menu Status filters (D only), but keep others
+    state.filters.status = { text:'', selected:new Set() };
+    // Rebuild just to reflect cleared state in the UI
+    setupHeaders(true);
+    $('#toggleVerifiedBtn').textContent='All runs';
+  }else{
+    state.quickStatus='all';
+    // Clear only D again (per spec: remove all filters in D only)
+    state.filters.status = { text:'', selected:new Set() };
+    setupHeaders(true);
+    $('#toggleVerifiedBtn').textContent='Verified runs only';
   }
+  state.page=1;
+  render();
 });
 
-$('#pageNum').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    state.page = Math.max(1, Number($('#pageNum').value) || 1);
-    render();
-  }
+// Difficulty dropdown on column C map text (contains match)
+$('#difficultySelect').addEventListener('change', ()=>{
+  state.difficulty = $('#difficultySelect').value; // all/easy/medium/hard/impossible
+  state.page=1;
+  render();
 });
+
+/*** ONLINE REMOVED ***/
 
 /*** BOOT ***/
-document.addEventListener('DOMContentLoaded', () => {
-  const sel = document.getElementById('pageSize');
-  if (sel) sel.value = String(state.pageSize);
-  refresh();
-  loadOnline();
-  setInterval(loadOnline, 30000); // refresh online count every 30s
-});
-
-// Optional: auto-refresh table every 5 minutes
-// setInterval(refresh, 5 * 60 * 1000);
+async function refresh(){ const ok=await loadData(); if(ok){ setupHeaders(true); render(); } }
+document.addEventListener('DOMContentLoaded',()=>{ const sel=$('#pageSize'); if(sel) sel.value=String(state.pageSize); refresh(); });
 </script>
 </body>
 </html>
