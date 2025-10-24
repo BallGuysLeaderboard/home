@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-mode="desktop">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,108 +8,263 @@
 <link rel="shortcut icon" href="/home/image1.png?v=2">
 <link rel="apple-touch-icon" href="/home/image1.png?v=2">
 <style>
+  /* ====== BASE (only tokens/utilities used by both; no layout here) ====== */
   :root{
     --bg:#0f1220; --panel:#161a2b; --accent:#7bdcff; --muted:#9aa4bf; --text:#e9efff; --border:rgba(255,255,255,.08);
-    --row-h:52px;   /* approx data row height */
-    --head-h:48px;  /* table head height inside grid */
   }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.4;}
-
-  /* Header matches maps page: static so grid header never scrolls behind it */
-  header{
-    position:static;
-    background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70));
-    backdrop-filter:blur(6px);
-    border-bottom:1px solid var(--border)
-  }
-
-  .container{max-width:1200px; margin:0 auto; padding:16px}
-  h1{margin:0; font-size:clamp(22px,3vw,32px)}
-  .sub-lg{font-size:clamp(16px,2.2vw,20px); margin-top:6px}
-  .sub-sm{color:var(--muted); font-size:13px; margin-top:6px}
-  .toolbar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px}
-  .btn{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center}
-  .btn:hover{border-color:#2a3150}
-  .btn:disabled{opacity:0.5; cursor:not-allowed;}
-  .btn.accent{background:linear-gradient(180deg,rgba(123,220,255,.18),rgba(123,220,255,.08)); border-color:rgba(123,220,255,.35)}
-  .select,.input{padding:10px 12px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; font-size:14px;}
-  .right{margin-left:auto}
-  .pagination{display:flex; align-items:center; gap:8px}
-  .page-input{width:56px; text-align:center}
-  a.link{color:var(--accent); text-decoration:none}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text)}
+  a.link{color:var(--accent);text-decoration:none}
   a.link:hover{text-decoration:underline}
+  .btn{cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--panel);color:var(--text)}
+  .select,.input{border:1px solid var(--border);background:var(--panel);color:var(--text)}
   .muted{color:var(--muted)}
-  .tip-inline{color:var(--muted); font-size:13px; white-space:nowrap}
-
-  /* Grid matches maps page: frozen header inside scroll area with fixed max-height */
-  .grid{margin:16px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:hidden}
-  .grid-scroll{
-    width:100%; overflow:auto; border-radius:16px;
-    max-height:calc(var(--head-h) + 10 * var(--row-h)); /* cap to 10 rows + header like maps */
-    position:relative;
-  }
-  table{width:100%; border-collapse:collapse}
-  thead th{
-    position:sticky; top:0; z-index:2; text-align:left; padding:12px; font-size:14px;
-    border-bottom:1px solid var(--border);
-    background:linear-gradient(180deg,rgba(22,26,43,.9),rgba(22,26,43,.6));
-    backdrop-filter:blur(4px);
-  }
-  tbody td{padding:12px; border-bottom:1px solid var(--border); vertical-align:top; height:var(--row-h)}
-  tbody tr:hover{background:rgba(255,255,255,.02)}
-  .loading{text-align:center; padding:40px; color:var(--muted)}
-  .error{background:rgba(255,123,123,.1); border:1px solid rgba(255,123,123,.3); color:#ffc7c7; padding:12px; border-radius:8px; margin:16px 0;}
-
-  .status{padding:4px 8px; border-radius:8px; font-size:12px; border:1px solid var(--border); display:inline-block;}
-  /* Precise status colors per request */
-  .status.pending{background:rgba(255,214,107,.08); border-color:rgba(255,214,107,.25); color:#ffe2a6}
-  .status.ineligible{background:rgba(180,190,200,.10); border-color:rgba(180,190,200,.28); color:#cbd5e1}
-  .status.verified{background:rgba(123,255,183,.08); border-color:rgba(123,255,183,.25); color:#b7ffd2}
-  .status.notverified{background:rgba(255,123,123,.08); border-color:rgba(255,123,123,.25); color:#ffc7c7}
-
-  .pill{font-size:12px; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:rgba(255,255,255,.04); display:inline-block;}
-  .hdr-tools{display:inline-flex; gap:6px; margin-left:6px}
-  .hdr-btn{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:1px solid var(--border); background:var(--panel); border-radius:6px; cursor:pointer; font-size:12px}
-  .hdr-btn.sort.active{border-color:rgba(255,214,107,.35); background:rgba(255,214,107,.1)}
-  .menu{
-    position:absolute; top:100%; left:0; margin-top:8px;
-    width:min(360px,90vw);
-    background:var(--panel); border:1px solid var(--border); border-radius:12px;
-    box-shadow:0 10px 30px rgba(0,0,0,.35); padding:10px; display:none; z-index:1000;
-    max-height:70vh; overflow:auto;
-  }
+  .status{padding:4px 8px;border-radius:8px;font-size:12px;border:1px solid var(--border);display:inline-block}
+  .status.pending{background:rgba(255,214,107,.08);border-color:rgba(255,214,107,.25);color:#ffe2a6}
+  .status.ineligible{background:rgba(180,190,200,.10);border-color:rgba(180,190,200,.28);color:#cbd5e1}
+  .status.verified{background:rgba(123,255,183,.08);border-color:rgba(123,255,183,.25);color:#b7ffd2}
+  .status.notverified{background:rgba(255,123,123,.08);border-color:rgba(255,123,123,.25);color:#ffc7c7}
+  .pill{font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.04);display:inline-block}
+  .error{background:rgba(255,123,123,.1);border:1px solid rgba(255,123,123,.3);color:#ffc7c7;padding:12px;border-radius:8px;margin:16px 0}
+  .hdr-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--panel);border-radius:6px;cursor:pointer}
+  .hdr-btn.sort.active{border-color:rgba(255,214,107,.35);background:rgba(255,214,107,.1)}
+  .menu{position:absolute;top:100%;left:0;margin-top:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:10px;display:none;z-index:1000;max-height:70vh;overflow:auto}
   .menu.open{display:block}
-  .menu .row{display:flex; gap:8px; margin-bottom:8px}
-  .menu .scroll{max-height:220px; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:6px}
-  .menu .item{display:flex; align-items:center; gap:8px; padding:6px 4px; cursor:pointer;}
+  .menu .row{display:flex;gap:8px;margin-bottom:8px}
+  .menu .scroll{max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:6px}
+  .menu .item{display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer}
   .menu .item:hover{background:rgba(255,255,255,.05)}
-  .menu .actions{display:flex; gap:8px; margin-top:8px}
+  .menu .actions{display:flex;gap:8px;margin-top:8px}
+  .loading{text-align:center;padding:40px;color:var(--muted)}
+  /* ====== DESKTOP MODE ====== */
+  html[data-mode="desktop"]{
+    --head-h:48px;
 
-  /* Mobile tweaks — align with maps page */
-  @media (max-width: 720px){
-    .container{padding:12px}
-    .toolbar{gap:8px}
-    thead th, tbody td{padding:10px}
-    table{min-width:unset}
-    .tip-inline{white-space:normal}
-  }
+    /* COLUMN WIDTHS (desktop) */
+    --col-nickname: 180px;
+    --col-time:     200px;
+    --col-map:      280px;
+    --col-status:   140px;
+    --col-video:    220px;
+    --col-image:    200px;
+    --col-user:     200px;
 
-  /* ====== COMPACT MODE (auto by JS on mobile), like maps ====== */
-  body.compact{
-    font-size:clamp(10px, 2.9vw, 14px);
+    --pad:16px;
+    --btn-pad:10px 12px;
+    --radius:10px;
+    --hdr-btn:24px;
+    --font:16px;
+    --h1:clamp(22px,3vw,32px);
+    --sub-lg:clamp(16px,2.2vw,20px);
   }
-  body.compact h1{font-size:clamp(16px,4.6vw,20px)}
-  body.compact .sub-lg{font-size:clamp(12px,3.8vw,15px)}
-  body.compact .sub-sm{font-size:clamp(11px,3.5vw,13px)}
-  body.compact .btn, body.compact .select, body.compact .input{padding:6px 8px; font-size:clamp(11px,3.2vw,13px); border-radius:8px}
-  body.compact .hdr-btn{width:20px; height:20px; font-size:10px; border-radius:6px}
-  body.compact thead th{padding:8px; font-size:clamp(10px,2.7vw,13px); line-height:1.2}
-  body.compact tbody td{padding:8px; font-size:clamp(10px,2.8vw,13px); line-height:1.25}
-  body.compact .grid-scroll{max-height:calc(40px + 10 * 40px)}
-  .wrap{white-space:normal; word-break:break-word}
-  body.compact .wrap{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
-  body.compact .no-clamp{display:block !important; -webkit-line-clamp:unset !important; overflow:visible !important;}
+  html[data-mode="desktop"] body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.4;font-size:var(--font)}
+  html[data-mode="desktop"] header{
+    position:static;background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70));backdrop-filter:blur(6px);border-bottom:1px solid var(--border)
+  }
+  html[data-mode="desktop"] .container{max-width:1200px;margin:0 auto;padding:var(--pad)}
+  html[data-mode="desktop"] h1{margin:0;font-size:var(--h1)}
+  html[data-mode="desktop"] .sub-lg{font-size:var(--sub-lg);margin-top:6px}
+  html[data-mode="desktop"] .sub-sm{color:var(--muted);font-size:13px;margin-top:6px}
+  html[data-mode="desktop"] .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  html[data-mode="desktop"] .btn,
+  html[data-mode="desktop"] .select,
+  html[data-mode="desktop"] .input{padding:var(--btn-pad);border-radius:var(--radius);font-size:14px}
+  html[data-mode="desktop"] .btn.accent{background:linear-gradient(180deg,rgba(123,220,255,.18),rgba(123,220,255,.08));border-color:rgba(123,220,255,.35)}
+  html[data-mode="desktop"] .right{margin-left:auto}
+  html[data-mode="desktop"] .pagination{display:flex;align-items:center;gap:8px}
+  html[data-mode="desktop"] .page-input{width:56px;text-align:center}
+
+  html[data-mode="desktop"] .grid{margin:16px auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  html[data-mode="desktop"] .grid-scroll{width:100%;overflow:auto;border-radius:16px;max-height:calc(var(--head-h) + 10 * 48px);position:relative}
+  html[data-mode="desktop"] table{width:100%;border-collapse:collapse;border-spacing:0;table-layout:fixed}
+  html[data-mode="desktop"] col.col-nickname{width:var(--col-nickname)}
+  html[data-mode="desktop"] col.col-time{width:var(--col-time)}
+  html[data-mode="desktop"] col.col-map{width:var(--col-map)}
+  html[data-mode="desktop"] col.col-status{width:var(--col-status)}
+  html[data-mode="desktop"] col.col-video{width:var(--col-video)}
+  html[data-mode="desktop"] col.col-image{width:var(--col-image)}
+  html[data-mode="desktop"] col.col-user{width:var(--col-user)}
+  html[data-mode="desktop"] thead th{
+    position:sticky;top:0;z-index:2;text-align:left;padding:12px;font-size:14px;border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,rgba(22,26,43,.9),rgba(22,26,43,.6));backdrop-filter:blur(4px);overflow-wrap:anywhere;word-break:break-word
+  }
+  html[data-mode="desktop"] tbody td{
+    padding:12px;border-bottom:1px solid var(--border);vertical-align:top;height:auto;line-height:1.35;overflow-wrap:anywhere;word-break:break-word
+  }
+  html[data-mode="desktop"] tbody tr:hover{background:rgba(255,255,255,.02)}
+  html[data-mode="desktop"] .hdr-tools{display:inline-flex;gap:6px;margin-left:6px}
+  html[data-mode="desktop"] .hdr-btn{width:var(--hdr-btn);height:var(--hdr-btn);font-size:12px}
+
+/* ====== MOBILE MODE ====== */
+html[data-mode="mobile"]{
+  --head-h:40px;
+
+  /* COLUMN WIDTHS (mobile) */
+--col-nickname: 45px;
+--col-time:     40px;
+--col-map:      85px;
+--col-status:   40px;
+--col-video:    45px;
+--col-image:    47.5px;
+--col-user:     47.5px;
+  
+  --pad:12px;
+  --btn-pad:6px 8px;
+  --radius:8px;
+  --hdr-btn:20px;
+  --font:clamp(10px, 2.9vw, 14px);
+  --h1:clamp(16px,4.6vw,20px);
+  --sub-lg:clamp(12px,3.8vw,15px);
+}
+html[data-mode="mobile"] body{
+  font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  line-height:1.35;
+  font-size:var(--font);
+}
+html[data-mode="mobile"] header{
+  position:static;
+  background:linear-gradient(180deg,rgba(15,18,32,.95),rgba(15,18,32,.70));
+  backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--border);
+}
+html[data-mode="mobile"] .container{max-width:100%;padding:var(--pad)}
+html[data-mode="mobile"] h1{margin:0;font-size:var(--h1)}
+html[data-mode="mobile"] .sub-lg{font-size:var(--sub-lg);margin-top:6px}
+html[data-mode="mobile"] .sub-sm{color:var(--muted);font-size:clamp(11px,3.5vw,13px);margin-top:6px}
+html[data-mode="mobile"] .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+html[data-mode="mobile"] .btn,
+html[data-mode="mobile"] .select,
+html[data-mode="mobile"] .input{
+  padding:var(--btn-pad);
+  border-radius:var(--radius);
+  font-size:clamp(11px,3.2vw,13px);
+}
+html[data-mode="mobile"] .btn.accent{
+  background:linear-gradient(180deg,rgba(123,220,255,.18),rgba(123,220,255,.08));
+  border-color:rgba(123,220,255,.35);
+}
+html[data-mode="mobile"] .right{margin-left:auto}
+html[data-mode="mobile"] .pagination{display:flex;align-items:center;gap:8px}
+html[data-mode="mobile"] .page-input{width:56px;text-align:center}
+
+html[data-mode="mobile"] .grid{
+  margin:12px auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+}
+html[data-mode="mobile"] .grid-scroll{
+  width:100%;
+  overflow:auto;
+  border-radius:16px;
+  max-height:calc(var(--head-h) + 10 * 48px);
+  position:relative;
+}
+html[data-mode="mobile"] table{
+  width:100%;
+  border-collapse:collapse;
+  border-spacing:0;
+  table-layout:fixed;
+}
+html[data-mode="mobile"] col.col-nickname{width:var(--col-nickname)}
+html[data-mode="mobile"] col.col-time{width:var(--col-time)}
+html[data-mode="mobile"] col.col-map{width:var(--col-map)}
+html[data-mode="mobile"] col.col-status{width:var(--col-status)}
+html[data-mode="mobile"] col.col-video{width:var(--col-video)}
+html[data-mode="mobile"] col.col-image{width:var(--col-image)}
+html[data-mode="mobile"] col.col-user{width:var(--col-user)}
+
+/* Universal adaptive header font sizing (all columns) */
+html[data-mode="mobile"] thead th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  text-align:left;
+  padding:8px;
+  font-size:clamp(2px,1.6vw,30px);
+  line-height:1.2;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(22,26,43,.9),rgba(22,26,43,.6));
+  backdrop-filter:blur(4px);
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+html[data-mode="mobile"] tbody td{
+  padding:8px;
+  border-bottom:1px solid var(--border);
+  vertical-align:top;
+  height:auto;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+html[data-mode="mobile"] tbody tr:hover{background:rgba(255,255,255,.02)}
+html[data-mode="mobile"] .hdr-tools{display:inline-flex;gap:6px;margin-left:6px}
+
+/* Adaptive sizing and no-wrap for time and status pills */
+html[data-mode="mobile"] .pill,
+html[data-mode="mobile"] .status{
+  display:inline-block;
+  font-size:clamp(0px,1.5vw,100px);
+  padding:2px 4px;
+  line-height:1.1;
+  border-radius:999px;
+  white-space:nowrap;
+  max-width:70px;
+  text-align:center;
+  overflow:hidden;
+  transform-origin:center;
+}
+
+/* Adaptive nickname column (col A) */
+html[data-mode="mobile"] td:first-child{
+  white-space:nowrap;
+  font-size:clamp(0px,2.2vw,100px);
+  overflow:hidden;
+  max-width:140px;
+}
+
+/* Column C: allow 1 wrap (2 lines) without breaking table borders */
+html[data-mode="mobile"] td:nth-child(3){
+  overflow:hidden;
+}
+html[data-mode="mobile"] td:nth-child(3) .clamp2{
+  font-size:clamp(8px,2.2vw,12px);
+  line-height:1.2;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  white-space:normal;
+  max-width:200px;
+}
+
+/* Adaptive sizing for the media buttons */
+html[data-mode="mobile"] .media-btn{
+  font-size: clamp(0px, 1.5vw, 100px);
+  padding: 2px 2px;
+  border-radius: 999px;
+}
+
+/* Universal adaptive header buttons (all columns) */
+html[data-mode="mobile"] thead th .hdr-btn{
+  width: clamp(0em, 3.25vw, 100em);
+  height: clamp(0em, 3.25vw, 100em);
+  font-size: clamp(0px, 3vw, 100px);
+  line-height: 1;
+  border-radius: 10px;
+}
+/* Adaptive sizing for column G (Discord Username) on mobile */
+html[data-mode="mobile"] td:nth-child(7){
+  font-size: clamp(8px, 2.2vw, 12px);
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
 </style>
 </head>
 <body>
@@ -120,7 +275,7 @@
     <div class="sub-lg">
       Submit your runs through <a class="link" href="/home/submissions">this form</a>
     </div>
-    <div class="sub-sm no-clamp">
+    <div class="sub-sm">
       Please read the <a class="link" href="/home/rules">instructions &amp; rules</a> before running a level in order to have a verified speedrun! All runs are manually reviewed.
     </div>
 
@@ -146,7 +301,6 @@
 <div class="container">
   <div id="errorContainer" style="display:none"></div>
 
-  <!-- Table-level quick filters -->
   <div class="toolbar" id="tableTools">
     <button class="btn" id="toggleVerifiedBtn">Verified runs only (Full Video!🎬🍿)</button>
     <label class="muted">Difficulty level</label>
@@ -157,19 +311,28 @@
       <option value="hard">Hard</option>
       <option value="impossible">Impossible</option>
     </select>
-    <span class="tip-inline">You can also use the filter and sort buttons to find anything you want!</span>
+    <span class="muted">You can also use the filter and sort buttons to find anything you want!</span>
   </div>
 
   <div class="grid">
     <div class="grid-scroll">
       <table id="grid">
+        <colgroup>
+          <col class="col-nickname">
+          <col class="col-time">
+          <col class="col-map">
+          <col class="col-status">
+          <col class="col-video">
+          <col class="col-image">
+          <col class="col-user">
+        </colgroup>
         <thead>
           <tr>
             <th data-col="nickname">Nickname
               <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
               <div class="menu"></div>
             </th>
-            <th data-col="timeMs">Time
+            <th data-col="timeMs">Run Time
               <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
               <div class="menu"></div>
             </th>
@@ -181,11 +344,11 @@
               <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
               <div class="menu"></div>
             </th>
-            <th data-col="video">Link to Submission Video
+            <th data-col="video">Video Link🎬
               <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
               <div class="menu"></div>
             </th>
-            <th data-col="image">Link to Submission Image
+            <th data-col="image">Screenshot📷
               <span class="hdr-tools"><button class="hdr-btn filter">⏷</button><button class="hdr-btn sort">⇅</button></span>
               <div class="menu"></div>
             </th>
@@ -201,22 +364,34 @@
       </table>
     </div>
   </div>
-
+</div>
 <script>
 /*** CONFIG ***/
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFY96ZcEnkA7ilt9yaw2XKQZdf92bE-v-kpe8kTe5vG-tgIRB93ecQT5kMFrYc_-6Z2A/exec';
+
+/*** MODE DETECTION (sets html[data-mode]) ***/
+function isMobileLike(){
+  const w=Math.min(window.innerWidth||0, screen.width||0);
+  const coarse=window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+  const ua=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  return (w<=860 && coarse) || (w<=640) || ua;
+}
+function setModeAttr(){ document.documentElement.setAttribute('data-mode', isMobileLike() ? 'mobile' : 'desktop'); }
+setModeAttr();
+addEventListener('resize', setModeAttr);
+addEventListener('orientationchange', setModeAttr);
 
 /*** STATE ***/
 const state = {
   data: [],
   filters: {},
-  sort: { col: 'map', dir: 'desc', strategy: 'mapFreqThenTime' }, // default strategy
-  pageSize: 10,
+  sort: { col: 'map', dir: 'desc', strategy: 'mapFreqThenTime' },
+  pageSize: 25,
   page: 1,
   loading: false,
   mapCounts: {},
-  quickStatus: 'all',      // 'all' | 'verified'
-  difficulty: 'all'        // 'all' | 'easy' | 'medium' | 'hard' | 'impossible'
+  quickStatus: 'all',
+  difficulty: 'all'
 };
 
 const COLS = [
@@ -228,44 +403,24 @@ const COLS = [
   { key: 'image',   label: 'Link to Submission Image' },
   { key: 'userId',  label: 'Discord Username' },
 ];
-
 COLS.forEach(c => state.filters[c.key] = { text: '', selected: new Set() });
 
 /*** HELPERS ***/
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
-function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-function uniqueVals(rows, col){ return [...new Set(rows.map(r => String(r[col] ?? '')))].sort(); }
-function escapeAttr(s){ return String(s ?? '').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+function uniqueVals(rows,col){return [...new Set(rows.map(r=>String(r[col] ?? '')))].sort()}
+function escapeAttr(s){return String(s ?? '').replace(/"/g,'&quot;').replace(/'/g,'&#x27;')}
 function formatTime(ms){
-  const t = Math.floor((Number(ms)||0)/1000), h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=t%60, hth=Math.floor(((Number(ms)||0)%1000)/10);
-  return h>0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(hth).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}.${String(hth).padStart(2,'0')}`;
+  const t=Math.floor((Number(ms)||0)/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60,hth=Math.floor(((Number(ms)||0)%1000)/10);
+  return h>0?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(hth).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}.${String(hth).padStart(2,'0')}`;
 }
-function statusClass(s){
-  const v = String(s||'').trim().toLowerCase();
-  if (v === 'pending') return 'pending';
-  if (v === 'ineligible') return 'ineligible';
-  if (v === 'verified') return 'verified';
-  if (v === 'not verified') return 'notverified';
-  return 'pending';
-}
-function normalizeStatus(s){ return String(s||'').trim().toLowerCase(); }
-function showError(message){ const c=$('#errorContainer'); c.innerHTML=`<div class="error">${message}</div>`; c.style.display='block'; }
-function hideError(){ $('#errorContainer').style.display='none'; }
-function computeMapCounts(rows){ const c={}; for(const r of rows){ const m=String(r.map??''); c[m]=(c[m]||0)+1; } state.mapCounts=c; }
-function isImpossibleMap(mapText){ return /\bimpossible\b/i.test(String(mapText||'')); }
-
-/*** MOBILE DETECTION (same as maps) ***/
-function isMobileLike(){
-  const w=Math.min(window.innerWidth||0, screen.width||0);
-  const coarse=window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-  const ua=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  return (w<=860 && coarse) || (w<=640) || ua;
-}
-function applyCompactIfNeeded(){ document.body.classList.toggle('compact', isMobileLike()); }
-applyCompactIfNeeded();
-window.addEventListener('resize', applyCompactIfNeeded);
-window.addEventListener('orientationchange', applyCompactIfNeeded);
+function statusClass(s){const v=String(s||'').trim().toLowerCase();if(v==='pending')return'pending';if(v==='ineligible')return'ineligible';if(v==='verified')return'verified';if(v==='not verified')return'notverified';return'pending'}
+function normalizeStatus(s){return String(s||'').trim().toLowerCase()}
+function showError(message){const c=$('#errorContainer');c.innerHTML=`<div class="error">${message}</div>`;c.style.display='block'}
+function hideError(){ $('#errorContainer').style.display='none' }
+function computeMapCounts(rows){const c={};for(const r of rows){const m=String(r.map??'');c[m]=(c[m]||0)+1}state.mapCounts=c}
+function isImpossibleMap(mapText){return /\bimpossible\b/i.test(String(mapText||''))}
 
 /*** DATA IO ***/
 async function loadData(){
@@ -292,57 +447,41 @@ async function loadData(){
 /*** FILTER + SORT + PAGE ***/
 function applyFilters(rows){
   return rows.filter(r=>{
-    /* header-menu filters */
     for(const [col,f] of Object.entries(state.filters)){
       const cell=String(r[col]??'');
       if(f.text && !cell.toLowerCase().includes(f.text.toLowerCase())) return false;
       if(f.selected.size>0 && !f.selected.has(cell)) return false;
     }
-    /* quick status filter */
     if(state.quickStatus==='verified' && normalizeStatus(r.status)!=='verified') return false;
-    /* difficulty filter on column C (map) contains selected word */
     if(state.difficulty!=='all'){
-      const target = state.difficulty.toLowerCase();
-      const mapText = String(r.map||'').toLowerCase();
+      const target=state.difficulty.toLowerCase();
+      const mapText=String(r.map||'').toLowerCase();
       if(!mapText.includes(target)) return false;
     }
     return true;
   });
 }
-
 function sortRows(rows){
   const {col,dir,strategy}=state.sort; const m=dir==='asc'?1:-1;
-
-  /* AUTO PRIORITY: all "Impossible" maps first by ascending time */
-  if (strategy === 'mapFreqThenTime') {
+  if(strategy==='mapFreqThenTime'){
     return rows.slice().sort((a,b)=>{
-      const impA = isImpossibleMap(a.map);
-      const impB = isImpossibleMap(b.map);
-      if (impA !== impB) return impA ? -1 : 1;                 // Impossible group first
-      if (impA && impB) {
-        const ta = Number(a.timeMs) || Infinity;
-        const tb = Number(b.timeMs) || Infinity;
-        if (ta !== tb) return ta - tb;                          // Asc time within Impossible
-        // tie-breakers within Impossible
-        const na = String(a.nickname||'');
-        const nb = String(b.nickname||'');
-        return na.localeCompare(nb, undefined, {numeric:true, sensitivity:'base'});
+      const ia=isImpossibleMap(a.map), ib=isImpossibleMap(b.map);
+      if(ia!==ib) return ia?-1:1;
+      if(ia&&ib){
+        const ta=Number(a.timeMs)||Infinity, tb=Number(b.timeMs)||Infinity;
+        if(ta!==tb) return ta-tb;
+        return String(a.nickname||'').localeCompare(String(b.nickname||''),undefined,{numeric:true,sensitivity:'base'});
       }
-      /* For the rest, keep the previous default "map frequency → time" ordering */
-      const counts = state.mapCounts || {};
-      const ma = String(a.map ?? ''), mb = String(b.map ?? '');
-      const ca = counts[ma] || 0,      cb = counts[mb] || 0;
-      if (ca !== cb) return cb - ca;                             // higher count first
-      const ta = Number(a.timeMs) || Infinity;
-      const tb = Number(b.timeMs) || Infinity;
-      if (ta !== tb) return ta - tb;                             // faster first
-      const mapCmp = ma.localeCompare(mb, undefined, {numeric:true, sensitivity:'base'});
-      if (mapCmp !== 0) return mapCmp;
-      return String(a.nickname||'').localeCompare(String(b.nickname||''), undefined, {numeric:true, sensitivity:'base'});
+      const counts=state.mapCounts||{}; const ma=String(a.map??''), mb=String(b.map??'');
+      const ca=counts[ma]||0, cb=counts[mb]||0;
+      if(ca!==cb) return cb-ca;
+      const ta=Number(a.timeMs)||Infinity, tb=Number(b.timeMs)||Infinity;
+      if(ta!==tb) return ta-tb;
+      const mapCmp=ma.localeCompare(mb,undefined,{numeric:true,sensitivity:'base'});
+      if(mapCmp!==0) return mapCmp;
+      return String(a.nickname||'').localeCompare(String(b.nickname||''),undefined,{numeric:true,sensitivity:'base'});
     });
   }
-
-  /* Manual sorts behave normally */
   return rows.slice().sort((a,b)=>{
     if(col==='timeMs') return ((Number(a.timeMs)||Infinity)-(Number(b.timeMs)||Infinity))*m;
     const an=Number(a[col]), bn=Number(b[col]);
@@ -350,7 +489,6 @@ function sortRows(rows){
     return String(a[col]??'').localeCompare(String(b[col]??''),undefined,{numeric:true,sensitivity:'base'})*m;
   });
 }
-
 function paginate(rows){
   const totalPages=Math.max(1,Math.ceil(rows.length/state.pageSize));
   state.page=clamp(state.page,1,totalPages);
@@ -380,13 +518,13 @@ function render(){
 
   let rowsHtml=pageRows.map(r=>`
     <tr>
-      <td class="wrap">${escapeAttr(r.nickname)}</td>
+      <td>${escapeAttr(r.nickname)}</td>
       <td><span class="pill">${formatTime(Number(r.timeMs)||0)}</span></td>
-      <td class="wrap">${escapeAttr(r.map)}</td>
+      <td>${escapeAttr(r.map)}</td>
       <td><span class="status ${statusClass(r.status)}">${escapeAttr(r.status||'Pending')}</span></td>
-      <td>${r.video?`<a class="link" href="${normalizeUrl(r.video)}" target="_blank" rel="noopener">Link to Video</a>`:''}</td>
-      <td>${r.image?`<a class="link" href="${normalizeUrl(r.image)}" target="_blank" rel="noopener">Link to Image</a>`:''}</td>
-      <td class="wrap">${escapeAttr(r.userId)}</td>
+      <td>${r.video?`<a class="btn accent media-btn" href="${normalizeUrl(r.video)}" target="_blank" rel="noopener">Video🎬</a>`:''}</td>
+<td>${r.image?`<a class="btn accent media-btn" href="${normalizeUrl(r.image)}" target="_blank" rel="noopener">Image📷</a>`:''}</td>
+      <td>${escapeAttr(r.userId)}</td>
     </tr>
   `).join('');
 
@@ -481,7 +619,6 @@ $('#pageNum').addEventListener('change',()=>{ state.page=Math.max(1, Number($('#
 $('#pageNum').addEventListener('keypress',(e)=>{ if(e.key==='Enter'){ state.page=Math.max(1, Number($('#pageNum').value)||1); render(); } });
 $('#refreshBtn').addEventListener('click',()=>{ if(!state.loading) refresh(); });
 
-/* Quick filter controls */
 $('#toggleVerifiedBtn').addEventListener('click', ()=>{
   if(state.quickStatus==='all'){
     state.quickStatus='verified';
